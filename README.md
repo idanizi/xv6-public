@@ -1,6 +1,8 @@
-## author
+##### Current Author
 this is Idan Izicovich <idanizi@gmail.com> editing for Unix xv6
+<hr>
 
+# Description
 
 xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
 Version 6 (v6).  xv6 loosely follows the structure and style of v6,
