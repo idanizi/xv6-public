@@ -14,3 +14,7 @@ kernel
 kernelmemfs
 mkfs
 .gdbinit
+.idea/*
+.imdone/
+CMakeLists.txt
+proc.h.gch

@@ -10,7 +10,7 @@ struct cpu {
   volatile uint started;       // Has the CPU started?
   int ncli;                    // Depth of pushcli nesting.
   int intena;                  // Were interrupts enabled before pushcli?
-  
+
   // Cpu-local storage variables; see below
   struct cpu *cpu;
   struct proc *proc;           // The currently-running process.
@@ -51,6 +51,10 @@ struct context {
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+// TODO: __Idan:__ add a field to the process control block PCB ( see proc.h – the proc structure ) in order to save an exit status of the terminated process #task1 #wormUp
+
+// FIXME: __Idan:__ Next, you have to change all system calls affected by this change ( i.e., exit and wait ) #task1 #wormUp
+
 // Per-process state
 struct proc {
   uint sz;                     // Size of process memory (bytes)
@@ -66,6 +70,7 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  int errno;                   // CHANGED process exit status field #tesk1 #wormUp
 };
 
 // Process memory is laid out contiguously, low addresses first:

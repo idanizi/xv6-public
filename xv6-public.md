@@ -1,0 +1,7 @@
+- __CHANGED__ _tesk1, wormUp_ process exit status field [proc.h](proc.h)
+- __FIXME__ _task1, wormUp_ _Idan:_ Next, you have to change all system calls affected by this change ( i.e., exit and wait ) [proc.h](proc.h)
+- __TODO__ _task1, wormUp_ __Idan:__ add a field to the process control block PCB ( see proc.h – the proc structure ) in order to save an exit s... [proc.h](proc.h)
+- __NOTE__ _Authors:_ if you use the "wx" configuration interface, you must also use [dot-bochsrc](dot-bochsrc)
+- __NOTE__ _Authors:_ if you use the "wx" configuration interface, you must also use [dot-bochsrc](dot-bochsrc)
+- __REVIEW__ _Authors:_ enum members [runoff](runoff)
+- __REVIEW__ _Authors:_ allow choice based on the facility: e.g. crash on panics from [dot-bochsrc](dot-bochsrc)
