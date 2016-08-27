@@ -81,7 +81,7 @@ extern int sys_chdir(void);
 extern int sys_close(void);
 extern int sys_dup(void);
 extern int sys_exec(void);
-extern int sys_exit(int status); // changed
+extern int sys_exit(void); // changed: back to void - for remove errors at compilation
 extern int sys_fork(void);
 extern int sys_fstat(void);
 extern int sys_getpid(void);
