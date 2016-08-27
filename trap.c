@@ -30,15 +30,15 @@ idtinit(void) {
 }
 
 //PAGEBREAK: 41
-void trap(struct trapframe *tf) // changed: argument of function 'exit'
+void trap(struct trapframe *tf)
 {
     if (tf->trapno == T_SYSCALL) {
         if (proc->killed)
-            exit(0);
+            exit(0); // changed
         proc->tf = tf;
         syscall();
         if (proc->killed)
-            exit(0);
+            exit(0); // changed
         return;
     }
 
@@ -94,7 +94,7 @@ void trap(struct trapframe *tf) // changed: argument of function 'exit'
     // (If it is still executing in the kernel, let it keep running
     // until it gets to the regular system call return.)
     if (proc && proc->killed && (tf->cs & 3) == DPL_USER)
-        exit(0);
+        exit(0); // changed
 
     // Force process to give up CPU on clock tick.
     // If interrupts were on while locks held, would need to check nlock.
@@ -103,5 +103,5 @@ void trap(struct trapframe *tf) // changed: argument of function 'exit'
 
     // Check if the process has been killed since we yielded
     if (proc && proc->killed && (tf->cs & 3) == DPL_USER)
-        exit(0);
+        exit(0); // changed
 }
