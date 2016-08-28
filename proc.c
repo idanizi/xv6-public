@@ -236,7 +236,7 @@ int wait(int *status) { // changed
                 p->killed = 0;
                 release(&ptable.lock);
                 if(status){ // CHANGED: return the exit status of child
-                    &status = p->status;
+                    *status = p->status;
                 }
                 return pid;
             }
