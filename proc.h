@@ -51,7 +51,7 @@ struct context {
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-// TODO: __Idan:__ add a field to the process control block PCB ( see proc.h – the proc structure ) in order to save an exit status of the terminated process #task1 #wormUp
+// DONE: __Idan:__ add a field to the process control block PCB ( see proc.h – the proc structure ) in order to save an exit status of the terminated process #task1 #wormUp
 
 // FIXME: __Idan:__ Next, you have to change all system calls affected by this change ( i.e., exit and wait ) #task1 #wormUp
 

@@ -21,9 +21,9 @@ sys_exit(int status) // changed: calling exit function with status parameter
 }
 
 int
-sys_wait(void)
+sys_wait(int *status) // changed
 {
-        return wait();
+        return wait(status);
 }
 
 int
