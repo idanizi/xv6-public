@@ -413,7 +413,7 @@ exitwait(void)
       return;
     }
     if(pid){
-      if(wait() != pid){
+      if(wait(0) != pid){
         printf(1, "wait wrong pid\n");
         return;
       }
@@ -1397,13 +1397,13 @@ forktest(void)
   }
   
   for(; n > 0; n--){
-    if(wait() < 0){
+    if(wait(0) < 0){
       printf(1, "wait stopped early\n");
       exit(0); // changed
     }
   }
   
-  if(wait() != -1){
+  if(wait(0) != -1){
     printf(1, "wait got too many\n");
     exit(0); // changed
   }
