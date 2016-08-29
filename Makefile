@@ -171,6 +171,7 @@ UPROGS=\
 	_stressfs\
 	_wc\
 	_zombie\
+	_mytest\
 	#_usertests
 
 fs.img: mkfs README $(UPROGS)
@@ -244,6 +245,7 @@ EXTRA=\
 	printf.c umalloc.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
+	mytest.c\
 	#usertests.c
 
 dist:
