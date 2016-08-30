@@ -14,15 +14,25 @@ sys_fork(void)
 }
 
 int
-sys_exit(int status) // changed: calling exit function with status parameter
+sys_exit(void)
 {
+        // changed: calling exit function with status parameter #task1
+        int status;
+        if(argint(0, &status) < 0)
+                return -1;
         exit(status);
+        // changed #end
         return 0; // not reached
 }
 
 int
-sys_wait(int *status) // changed
+sys_wait(void)
 {
+        // changed #task1
+        int* status;
+        if(argptr(0, (char**) &status, sizeof(int*)) < 0)
+                return -1;
+        // changed #end
         return wait(status);
 }
 

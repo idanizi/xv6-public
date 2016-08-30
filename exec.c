@@ -15,6 +15,7 @@ void implicitExit(){
     asm("int %0"          :: "i" (T_SYSCALL));
 }
 void endImplicitExit(){}
+// changed #end
 
 int exec(char *path, char **argv) {
     char *s, *last;
@@ -72,9 +73,10 @@ int exec(char *path, char **argv) {
     int codeLength = endImplicitExit - implicitExit;
     sp -= codeLength;
 //    sp &= ~3; // disable two last bits
-    int codeOffsetOnStack = sp;
+//    int codeOffsetOnStack = sp;
     if(copyout(pgdir, sp, implicitExit, codeLength) < 0)
         goto bad;
+    // changed #end
 
     // Push argument strings, prepare rest of stack in ustack.
     for (argc = 0; argv[argc]; argc++) {
@@ -89,7 +91,8 @@ int exec(char *path, char **argv) {
 
     // changed #task1.3
     // ustack[0] = 0xffffffff;  // fake return PC // cancelled
-    ustack[0] = codeOffsetOnStack; // exit code address (offset)
+    ustack[0] = sz - codeLength; // exit code address (offset)
+    // changed #end
 
     ustack[1] = argc;
     ustack[2] = sp - (argc + 1) * 4;  // argv pointer
