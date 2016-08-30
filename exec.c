@@ -14,7 +14,7 @@ void implicitExit(){
     asm("movl %0 , %%eax" :: "i" (SYS_exit));
     asm("int %0"          :: "i" (T_SYSCALL));
 }
-void endImplicitExit(){;}
+void endImplicitExit(){}
 
 int exec(char *path, char **argv) {
     char *s, *last;
@@ -71,9 +71,9 @@ int exec(char *path, char **argv) {
     // changed: getting the address of the injecting code of implicitExit() #task1.3
     int codeLength = endImplicitExit - implicitExit;
     sp -= codeLength;
-    sp &= ~3; // disable two last bits
-    void *codeAddress =  (void*)sp;
-    if(copyout(pgdir, sp, codeAddress, codeLength) < 0)
+//    sp &= ~3; // disable two last bits
+    int codeOffsetOnStack = sp;
+    if(copyout(pgdir, sp, implicitExit, codeLength) < 0)
         goto bad;
 
     // Push argument strings, prepare rest of stack in ustack.
@@ -88,8 +88,8 @@ int exec(char *path, char **argv) {
     ustack[3 + argc] = 0;
 
     // changed #task1.3
-//    ustack[0] = 0xffffffff;  // fake return PC
-    ustack[0] =
+    // ustack[0] = 0xffffffff;  // fake return PC // cancelled
+    ustack[0] = codeOffsetOnStack; // exit code address (offset)
 
     ustack[1] = argc;
     ustack[2] = sp - (argc + 1) * 4;  // argv pointer
