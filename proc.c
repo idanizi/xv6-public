@@ -294,7 +294,7 @@ scheduler(void) {
 }
 
 // Enter scheduler.  Must hold only ptable.lock
-// and have changed proc->state.
+// and change proc->state.
 void
 sched(void) {
     int intena;
