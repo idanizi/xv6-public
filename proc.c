@@ -46,6 +46,7 @@ allocproc(void) {
 
     found:
     p->state = EMBRYO;
+    p->priority = 10; // changed: The priority of a new processes is 10. #task2.1
     p->pid = nextpid++;
     release(&ptable.lock);
 
@@ -267,18 +268,26 @@ int random(int ticks, int nTotalTickets){
 // TODO: implement a new system call: void priority(int); #task2.1
 /*
  * system call: void priority(int);
- * can be used by a process to change its priority. The priority of a new processes is 10.
+ * can be used by a process to change its priority.
  */
 
 // change the sub-policy used – and will re-distribute the tickets accordingly
 int schedp(int sched_policy_id) {
+    struct proc *p = 0;
+
+    // mutex critical section
+    acquire(&ptable.lock);
+
     switch (sched_policy_id) {
         case UNIFORM_POLICY:
-            // TODO: implement: Policy 1: Uniform time distribution
+            // DONE: implement: Policy 1: Uniform time distribution
             /*
              * achieve a uniform time allocation to the processes (assuming that your implementation
              * of the random number generator achieves a uniform distribution of the return values).
              */
+            for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+                p->nTickets = 1;
+            }
             break;
         case PRIORITY_POLICY:
             // TODO: implement: Policy 2: Priority scheduling #task2.1
@@ -288,8 +297,10 @@ int schedp(int sched_policy_id) {
              * p1 and p2 having priorities 1 and 2 accordingly, process p2 will receive
              * approximately twice the run-time received by p1.
              */
-
-            break;
+            for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+                p->nTickets = p->priority;
+            }
+                break;
         case DYNAMIC_POLICY:
             // TODO: implement: Policy 3: Dynamic tickets allocation #task2.1
             /*
@@ -302,8 +313,13 @@ int schedp(int sched_policy_id) {
              */
             break;
         default:
+            // end option 1/2 of critical section
+            release(&ptable.lock);
             return -1;
     }
+
+    // end option 2/2 of critical section
+    release(&ptable.lock);
     return 0;
 }
 

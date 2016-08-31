@@ -83,6 +83,7 @@ struct proc {
     char name[16];               // Process name (debugging)
     int status;                  // CHANGED: process exit status field #tesk1 #wormUp
     int nTickets;                // CHANGED: number of tickets to process #task2.1
+    int priority;                // CHANGED: process's priority for the scheduler with priority policy #task2.1 TODO: is needed?
 };
 
 // Process memory is laid out contiguously, low addresses first:
