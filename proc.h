@@ -1,6 +1,12 @@
 // Segments in proc->gdt.
 #define NSEGS     7
 
+//changed: constants #task2.1
+#define RANDOM_NUMBER_1 12345685L
+#define RANDOM_NUMBER_2 58251321L
+enum schedulingPolicies {UNIFORM_POLICY, PRIORITY_POLICY, DYNAMIC_POLICY};
+//changed #end
+
 // Per-CPU state
 struct cpu {
   uchar id;                    // Local APIC ID; index into cpus[] below
@@ -52,25 +58,56 @@ struct context {
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // DONE: __Idan:__ add a field to the process control block PCB ( see proc.h – the proc structure ) in order to save an exit status of the terminated process #task1 #wormUp
-
 // DONE: __Idan:__ Next, you have to change all system calls affected by this change ( i.e., exit and wait ) #task1 #wormUp
+// DONE: add field 'nTickets' to proc struct #task2.1
+
+
+// TODO: implement: Policy 1: Uniform time distribution
+/*
+ * achieve a uniform time allocation to
+ * the processes (assuming that your implementation of the random number generator achieves a uniform
+ * distribution of the return values).
+ */
+// TODO: implement: Policy 2: Priority scheduling #task2.1
+/*
+ * This scheduling policy will take the process priority into consideration while deciding the number of
+ * tickets to allocate. For example, given two processes p1 and p2 having priorities 1 and 2 accordingly,
+ * process p2 will receive approximately twice the run-time received by p1.
+ */
+// TODO: implement a new system call: void priority(int); #task2.1
+/*
+ * system call: void priority(int);
+ * can be used by a process to change its priority. The priority of a new processes is 10.
+ */
+
+// TODO: implement: Policy 3: Dynamic tickets allocation #task2.1
+/*
+ * This policy will dynamically reallocate the tickets in response to the process behavior. A newly created
+ * process will get 20 tickets. Each time a process performs a blocking system call, it will receive additional
+ * 10 tickets (up to maximum of 100 tickets) and each time a process ends the quanta without performing
+ * a blocking system call, the amount of the tickets owned be the process will be reduced by 1 (to the
+ * minimum of 1).
+ */
+// TODO: Write a user space program called policy which accepts a single argument – the policy identifier. The program must update the scheduling policy accordingly. #task2.1
+
 
 // Per-process state
 struct proc {
-  uint sz;                     // Size of process memory (bytes)
-  pde_t* pgdir;                // Page table
-  char *kstack;                // Bottom of kernel stack for this process
-  enum procstate state;        // Process state
-  int pid;                     // Process ID
-  struct proc *parent;         // Parent process
-  struct trapframe *tf;        // Trap frame for current syscall
-  struct context *context;     // swtch() here to run process
-  void *chan;                  // If non-zero, sleeping on chan
-  int killed;                  // If non-zero, have been killed
-  struct file *ofile[NOFILE];  // Open files
-  struct inode *cwd;           // Current directory
-  char name[16];               // Process name (debugging)
-  int status;                   // CHANGED: process exit status field #tesk1 #wormUp
+    uint sz;                     // Size of process memory (bytes)
+    pde_t *pgdir;                // Page table
+    char *kstack;                // Bottom of kernel stack for this process
+    enum procstate state;        // Process state
+    int pid;                     // Process ID
+    struct proc *parent;         // Parent process
+    struct trapframe *tf;        // Trap frame for current syscall
+    struct context *context;     // swtch() here to run process
+    void *chan;                  // If non-zero, sleeping on chan
+    int killed;                  // If non-zero, have been killed
+    struct file *ofile[NOFILE];  // Open files
+    struct inode *cwd;           // Current directory
+    char name[16];               // Process name (debugging)
+    int status;                  // CHANGED: process exit status field #tesk1 #wormUp
+    int nTickets;                // CHANGED: number of tickets to process #task2.1
 };
 
 // Process memory is laid out contiguously, low addresses first:

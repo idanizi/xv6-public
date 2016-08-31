@@ -253,6 +253,45 @@ int wait(int *status) { // changed
     }
 }
 
+// TODO: Change the code of the scheduler to generate a single random number (between 0 and the total number of the allocated tickets), which will represent a ticket number. The scheduler then will chose the process owning that ticket for execution. #task2.1
+// TODO: add a system call: int schedp(int sched_policy_id), which will be used to change the sub-policy used – and will re-distribute the tickets accordingly. #task2.1
+
+//changed #task1.2
+
+// random function
+// used by the scheduler
+int random(int ticks, int nTotalTickets){
+    return (RANDOM_NUMBER_1 * ticks + RANDOM_NUMBER_2) % nTotalTickets;
+}
+
+// change the sub-policy used – and will re-distribute the tickets accordingly
+int schedp(int sched_policy_id){
+    switch (sched_policy_id){
+        case UNIFORM_POLICY:
+            break;
+        case PRIORITY_POLICY:
+            break;
+        case DYNAMIC_POLICY:
+            break;
+        // TODO: need to add default - throw trap exception
+//        default:
+//            break;
+    }
+}
+
+// return number of clock cycles of cpu
+int uptime()
+{
+    uint xticks;
+
+    acquire(&tickslock);
+    xticks = ticks;
+    release(&tickslock);
+    return xticks;
+}
+
+//changed #end
+
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -264,6 +303,11 @@ int wait(int *status) { // changed
 void
 scheduler(void) {
     struct proc *p;
+    // changed: policies #task2.1
+    int chosenTicket;
+    int nTotalTickets;
+    int xTicks;
+    // changed #end
 
     for (;;) {
         // Enable interrupts on this processor.
@@ -271,9 +315,28 @@ scheduler(void) {
 
         // Loop over process table looking for process to run.
         acquire(&ptable.lock);
+
+        // changed #task2.1
+        // count total number of tickets
+        for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+            if (p->state == RUNNABLE) {
+                nTotalTickets += p->nTickets;
+            }
+        }
+
+        xTicks = uptime();
+        chosenTicket = random(xTicks, nTotalTickets);
+        // changed #end
+
         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
             if (p->state != RUNNABLE)
                 continue;
+
+            // changed #task2.1
+            chosenTicket -= p->nTickets;
+            if (chosenTicket > 0 && p->state != RUNNABLE)
+                continue;
+            // changed #end
 
             // Switch to chosen process.  It is the process's job
             // to release ptable.lock and then reacquire it
@@ -285,7 +348,7 @@ scheduler(void) {
             switchkvm();
 
             // Process is done running for now.
-            // It should have changed its p->state before coming back.
+            // It should change its p->state before coming back.
             proc = 0;
         }
         release(&ptable.lock);
