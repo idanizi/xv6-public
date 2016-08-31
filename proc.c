@@ -264,19 +264,47 @@ int random(int ticks, int nTotalTickets){
     return (RANDOM_NUMBER_1 * ticks + RANDOM_NUMBER_2) % nTotalTickets;
 }
 
+// TODO: implement a new system call: void priority(int); #task2.1
+/*
+ * system call: void priority(int);
+ * can be used by a process to change its priority. The priority of a new processes is 10.
+ */
+
 // change the sub-policy used – and will re-distribute the tickets accordingly
-int schedp(int sched_policy_id){
-    switch (sched_policy_id){
+int schedp(int sched_policy_id) {
+    switch (sched_policy_id) {
         case UNIFORM_POLICY:
+            // TODO: implement: Policy 1: Uniform time distribution
+            /*
+             * achieve a uniform time allocation to the processes (assuming that your implementation
+             * of the random number generator achieves a uniform distribution of the return values).
+             */
             break;
         case PRIORITY_POLICY:
+            // TODO: implement: Policy 2: Priority scheduling #task2.1
+            /*
+             * This scheduling policy will take the process priority into consideration while
+             * deciding the number of tickets to allocate. For example, given two processes
+             * p1 and p2 having priorities 1 and 2 accordingly, process p2 will receive
+             * approximately twice the run-time received by p1.
+             */
+
             break;
         case DYNAMIC_POLICY:
+            // TODO: implement: Policy 3: Dynamic tickets allocation #task2.1
+            /*
+             * This policy will dynamically reallocate the tickets in response to the process
+             * behavior. A newly created process will get 20 tickets. Each time a process performs
+             * a blocking system call, it will receive additional 10 tickets (up to maximum of 100
+             * tickets) and each time a process ends the quanta without performing a blocking system
+             * call, the amount of the tickets owned be the process will be reduced by 1 (to the
+             * minimum of 1).
+             */
             break;
-        // TODO: need to add default - throw trap exception
-//        default:
-//            break;
+        default:
+            return -1;
     }
+    return 0;
 }
 
 // return number of clock cycles of cpu
