@@ -99,3 +99,19 @@ sys_uptime(void)
         release(&tickslock);
         return xticks;
 }
+
+// changed: adding system calls that need to be handled by the kernel #task2.1
+
+// system call to change process priority
+int sys_priority(void){
+
+    // collect arguments
+    int priorityNumber;
+    if(argint(0, &priorityNumber) < 0)
+        return -1;
+
+    // call kernel space priority function, and return its value to the caller
+    return priority(priorityNumber);
+}
+
+// changed #end

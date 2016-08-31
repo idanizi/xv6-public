@@ -561,3 +561,15 @@ procdump(void) {
         cprintf("\n");
     }
 }
+
+// changed: adding 'int priority(int)' system call function implementation #task2.1
+// Sets the priority of the current process
+int priority(int priorityNumber){
+    if(!proc)
+        return -1;
+
+    proc->priority = priorityNumber;
+
+    return 0;
+}
+// changed #end

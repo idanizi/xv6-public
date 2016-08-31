@@ -105,7 +105,7 @@ int             pipewrite(struct pipe*, char*, int);
 //PAGEBREAK: 16
 // proc.c
 struct proc*    copyproc(struct proc*);
-void            exit(int status); // changed
+void            exit(int); // changed #task1
 int             fork(void);
 int             growproc(int);
 int             kill(int);
@@ -115,9 +115,10 @@ void            scheduler(void) __attribute__((noreturn));
 void            sched(void);
 void            sleep(void*, struct spinlock*);
 void            userinit(void);
-int             wait(int *status); // changed
+int             wait(int); // changed #task1
 void            wakeup(void*);
 void            yield(void);
+int             priority(int); // changed #task2.1
 
 // swtch.S
 void            swtch(struct context**, struct context*);
