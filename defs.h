@@ -115,7 +115,7 @@ void            scheduler(void) __attribute__((noreturn));
 void            sched(void);
 void            sleep(void*, struct spinlock*);
 void            userinit(void);
-int             wait(int); // changed #task1
+int             wait(int*); // changed #task1
 void            wakeup(void*);
 void            yield(void);
 int             priority(int); // changed #task2.1
