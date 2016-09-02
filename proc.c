@@ -261,8 +261,11 @@ int wait(int *status) { // changed
 
 // random function
 // used by the scheduler
-int random(int ticks, int nTotalTickets){
-    return (RANDOM_NUMBER_1 * ticks + RANDOM_NUMBER_2) % nTotalTickets;
+int random(int seed, int nTotalTickets) {
+    if (nTotalTickets == 0) {
+        nTotalTickets = 1;
+    }
+    return (RANDOM_NUMBER_1 * seed + RANDOM_NUMBER_2) % nTotalTickets;
 }
 
 // TODO: implement a new system call: void priority(int); #task2.1
@@ -272,7 +275,7 @@ int random(int ticks, int nTotalTickets){
  */
 
 // change the sub-policy used – and will re-distribute the tickets accordingly
-int schedp(int sched_policy_id) {
+int schedp(enum schedulingPolicies sched_policy_id) {
     struct proc *p = 0;
 
     // mutex critical section
@@ -348,29 +351,34 @@ void
 scheduler(void) {
     struct proc *p;
     // changed: policies #task2.1
-    int chosenTicket;
-    int nTotalTickets;
-    int xTicks;
+    int chosenTicket = 0;
+    int nTotalTickets = 0; // note: _Idan_ avoid divide by zero
+    uint xTicks = 0;
+
+    schedp(UNIFORM_POLICY); // TODO: delete this?
     // changed #end
 
     for (;;) {
         // Enable interrupts on this processor.
         sti();
 
-        // Loop over process table looking for process to run.
-        acquire(&ptable.lock);
-
         // changed #task2.1
-        // count total number of tickets
+
+        // count total number of tickets - Critical Section
+        acquire(&ptable.lock);
         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
             if (p->state == RUNNABLE) {
                 nTotalTickets += p->nTickets;
             }
         }
+        release(&ptable.lock);
 
         xTicks = uptime();
         chosenTicket = random(xTicks, nTotalTickets);
         // changed #end
+
+        // Loop over process table looking for process to run.
+        acquire(&ptable.lock);
 
         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
             if (p->state != RUNNABLE)
