@@ -118,7 +118,7 @@ void            userinit(void);
 int             wait(int*); // changed #task1
 void            wakeup(void*);
 void            yield(void);
-int             priority(int); // changed #task2.1
+void             priority(int); // changed #task2.1
 
 // swtch.S
 void            swtch(struct context**, struct context*);
