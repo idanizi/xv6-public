@@ -27,6 +27,8 @@ pinit(void) {
     initlock(&ptable.lock, "ptable");
 }
 
+int currentPolicy = UNIFORM_POLICY; // changed #task2.1
+
 //PAGEBREAK: 32
 // Look in the process table for an UNUSED proc.
 // If found, change state to EMBRYO and initialize
@@ -275,7 +277,7 @@ int random(int seed, int nTotalTickets) {
  */
 
 // change the sub-policy used – and will re-distribute the tickets accordingly
-int schedp(enum schedulingPolicies sched_policy_id) {
+int schedp(int sched_policy_id) {
     struct proc *p = 0;
 
     // mutex critical section

@@ -4,11 +4,9 @@
 //changed: constants #task2.1
 #define RANDOM_NUMBER_1 12345685L
 #define RANDOM_NUMBER_2 58251321L
-enum schedulingPolicies {
-    UNIFORM_POLICY,
-    PRIORITY_POLICY,
-    DYNAMIC_POLICY
-};
+#define UNIFORM_POLICY 1
+#define PRIORITY_POLICY 2
+#define DYNAMIC_POLICY 3
 //changed #end
 
 // Per-CPU state

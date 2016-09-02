@@ -111,7 +111,8 @@ int sys_priority(void){
         return -1;
 
     // call kernel space priority function, and return its value to the caller
-    return priority(priorityNumber);
+    priority(priorityNumber);
+    return 0;
 }
 
 // changed #end
