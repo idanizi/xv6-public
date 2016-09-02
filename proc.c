@@ -283,6 +283,7 @@ int schedp(int sched_policy_id) {
     // mutex critical section
     acquire(&ptable.lock);
 
+    currentPolicy = sched_policy_id; // set the current policy.
     switch (sched_policy_id) {
         case UNIFORM_POLICY:
             // DONE: implement: Policy 1: Uniform time distribution
@@ -295,7 +296,7 @@ int schedp(int sched_policy_id) {
             }
             break;
         case PRIORITY_POLICY:
-            // TODO: implement: Policy 2: Priority scheduling #task2.1
+            // DONE: implement: Policy 2: Priority scheduling #task2.1
             /*
              * This scheduling policy will take the process priority into consideration while
              * deciding the number of tickets to allocate. For example, given two processes
