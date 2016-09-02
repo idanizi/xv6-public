@@ -1,3 +1,7 @@
+// changed #task2.2
+#include "perf.h"
+// changed #end
+
 #include "types.h"
 #include "defs.h"
 #include "param.h"
@@ -6,6 +10,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+
 
 struct {
     struct spinlock lock;
@@ -615,4 +620,12 @@ void priority(int priorityNumber){
 
     proc->priority = priorityNumber;
 }
+
+// changed: adding 'int wait_stat(int* status, struct perf *)' system call function implementation #task2.2
+// extracting the process times information and presenting it to the user.
+int wait_stat(int *status, struct perf * performance) { // TODO: implement this function
+
+    return -1; // failure
+}
+
 // changed #end

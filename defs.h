@@ -8,6 +8,7 @@ struct rtcdate;
 struct spinlock;
 struct stat;
 struct superblock;
+struct perf; // changed #task2.2
 
 // bio.c
 void            binit(void);
@@ -118,7 +119,8 @@ void            userinit(void);
 int             wait(int*); // changed #task1
 void            wakeup(void*);
 void            yield(void);
-void             priority(int); // changed #task2.1
+void            priority(int); // changed #task2.1
+int             wait_stat(int *status, struct perf *); // changed #task2.2
 
 // swtch.S
 void            swtch(struct context**, struct context*);

@@ -6,6 +6,9 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+// changed #task2.2
+#include "perf.h"
+// changed #end
 
 int
 sys_fork(void)
@@ -115,4 +118,8 @@ int sys_priority(void){
     return 0;
 }
 
+// system call to extract information and present to the user - process times
+int sys_wait_stat(void){ // TODO: implement this function
+        return 0;
+}
 // changed #end
