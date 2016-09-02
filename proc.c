@@ -48,7 +48,15 @@ allocproc(void) {
 
     found:
     p->state = EMBRYO;
-    p->priority = 10; // changed: The priority of a new processes is 10. #task2.1
+    // changed: The priority of a new processes is 10 / 20 / 1. #task2.1
+    if(currentPolicy == UNIFORM_POLICY) {
+        p->priority = 10;
+    }else if(currentPolicy == DYNAMIC_POLICY){
+        p->priority = 20;
+    }else{
+        p->priority = 1;
+    }
+    // changed #end
     p->pid = nextpid++;
     release(&ptable.lock);
 
@@ -303,12 +311,8 @@ int schedp(int sched_policy_id) {
              * p1 and p2 having priorities 1 and 2 accordingly, process p2 will receive
              * approximately twice the run-time received by p1.
              */
-            for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
-                p->nTickets = p->priority;
-            }
-                break;
         case DYNAMIC_POLICY:
-            // TODO: implement: Policy 3: Dynamic tickets allocation #task2.1
+            // DONE: implement: Policy 3: Dynamic tickets allocation #task2.1
             /*
              * This policy will dynamically reallocate the tickets in response to the process
              * behavior. A newly created process will get 20 tickets. Each time a process performs
@@ -317,6 +321,9 @@ int schedp(int sched_policy_id) {
              * call, the amount of the tickets owned be the process will be reduced by 1 (to the
              * minimum of 1).
              */
+            for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+                p->nTickets = p->priority;
+            }
             break;
         default:
             // end option 1/2 of critical section
@@ -358,7 +365,7 @@ scheduler(void) {
     int nTotalTickets = 0; // note: _Idan_ avoid divide by zero
     uint xTicks = 0;
 
-    schedp(UNIFORM_POLICY); // TODO: delete this?
+    schedp(currentPolicy); // TODO: change this location
     // changed #end
 
     for (;;) {
@@ -434,6 +441,14 @@ sched(void) {
 void
 yield(void) {
     acquire(&ptable.lock);  //DOC: yieldlock
+
+    // changed give less 1 ticket to process, dynamic policy #task2.1
+    if (currentPolicy == DYNAMIC_POLICY) {
+        proc->nTickets--;
+        if (proc->nTickets < 1) { proc->nTickets = 1; }
+    }
+    //changed #end
+
     proc->state = RUNNABLE;
     sched();
     release(&ptable.lock);
@@ -502,9 +517,18 @@ static void
 wakeup1(void *chan) {
     struct proc *p;
 
-    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-        if (p->state == SLEEPING && p->chan == chan)
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+        if (p->state == SLEEPING && p->chan == chan) {
             p->state = RUNNABLE;
+        }
+
+        // changed #task1.2
+        if(currentPolicy == DYNAMIC_POLICY){
+            p->nTickets += 10;
+            if (p->nTickets > 100) { p->nTickets = 100; }
+        }
+        // changed #end
+    }
 }
 
 // Wake up all processes sleeping on chan.
