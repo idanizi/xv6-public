@@ -56,6 +56,13 @@ allocproc(void) {
     }else{
         p->priority = 1;
     }
+    // changed #task2.2
+    p->cTime = ticks; // NOTE: creation time stamp
+    // init all time counters to zero
+    p->tTime = 0;
+    p->sTime = 0;
+    p->reTime = 0;
+    p->ruTime = 0;
     // changed #end
     p->pid = nextpid++;
     release(&ptable.lock);
@@ -211,8 +218,11 @@ void exit(int status) { // CHANGED
         }
     }
 
-    // changed: store the exit status of the terminated process
+    // changed: store the exit status of the terminated process #task1
     proc->status = status;
+    // changed: update process termination time #task2.2
+    proc->tTime = ticks;
+    // changed #end
 
     // Jump into the scheduler, never to return.
     proc->state = ZOMBIE;

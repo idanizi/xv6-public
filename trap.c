@@ -47,6 +47,16 @@ void trap(struct trapframe *tf)
             if (cpu->id == 0) {
                 acquire(&tickslock);
                 ticks++;
+                // TODO: update proc struct after every clock tick #task2.2
+                // changed #task2.2
+                if (proc->state == SLEEPING) {
+                    proc->sTime++;
+                } else if (proc->state == RUNNABLE) {
+                    proc->reTime++;
+                } else if (proc->state == RUNNING) {
+                    proc->ruTime++;
+                }
+                // changed #end
                 wakeup(&ticks);
                 release(&tickslock);
             }
