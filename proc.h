@@ -85,7 +85,7 @@ struct proc {
     char name[16];               // Process name (debugging)
     int status;                  // CHANGED: process exit status field #tesk1 #wormUp
     int nTickets;                // CHANGED: number of tickets to process #task2.1
-    int priority;                // CHANGED: process's priority for the scheduler with priority policy #task2.1 TODO: is needed?
+    int priority;                // CHANGED: process's priority for the scheduler with priority policy #task2.1 NOTE: is needed?
     int cTime;                   // CHANGED: process creation time #task2.2
     int tTime;                   // CHANGED: process termination time #task2.2
     int sTime;                   // CHANGED: the time the process spent on the SLEEPING state #task2.2

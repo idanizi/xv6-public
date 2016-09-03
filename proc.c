@@ -279,7 +279,7 @@ int wait(int *status) { // changed
     }
 }
 
-// TODO: Change the code of the scheduler to generate a single random number (between 0 and the total number of the allocated tickets), which will represent a ticket number. The scheduler then will chose the process owning that ticket for execution. #task2.1
+// DONE: Change the code of the scheduler to generate a single random number (between 0 and the total number of the allocated tickets), which will represent a ticket number. The scheduler then will chose the process owning that ticket for execution. #task2.1
 // TODO: add a system call: int schedp(int sched_policy_id), which will be used to change the sub-policy used – and will re-distribute the tickets accordingly. #task2.1
 
 //changed #task1.2
@@ -293,7 +293,7 @@ int random(int seed, int nTotalTickets) {
     return (RANDOM_NUMBER_1 * seed + RANDOM_NUMBER_2) % nTotalTickets;
 }
 
-// TODO: implement a new system call: void priority(int); #task2.1
+// DONE: implement a new system call: void priority(int); #task2.1
 /*
  * system call: void priority(int);
  * can be used by a process to change its priority.
@@ -622,10 +622,38 @@ void priority(int priorityNumber){
 }
 
 // changed: adding 'int wait_stat(int* status, struct perf *)' system call function implementation #task2.2
-// extracting the process times information and presenting it to the user.
-int wait_stat(int *status, struct perf * performance) { // TODO: implement this function
 
-    return -1; // failure
+// private function to retrieve process by its pid
+struct proc * getProcessByPid(int pid){
+    struct proc *p = 0;
+    acquire(&ptable.lock);
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+        if(p->pid == pid){
+            return p;
+        }
+    }
+    release(&ptable.lock);
+    return p;
+}
+
+// extracting the process times information and presenting it to the user.
+int wait_stat(int *status, struct perf * performance) {
+    int pid = -1;
+    struct proc *p = 0;
+    pid = wait(status);
+    if (pid != -1) {
+        p = getProcessByPid(pid);
+        if (p) {
+            performance->cTime = p->cTime;
+            performance->tTime = p->tTime;
+            performance->sTime = p->sTime;
+            performance->reTime = p->reTime;
+            performance->ruTime = p->ruTime;
+        } else {
+            return -1; // failure
+        }
+    }
+    return pid;
 }
 
 // changed #end
