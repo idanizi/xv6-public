@@ -280,7 +280,7 @@ int wait(int *status) { // changed
 }
 
 // DONE: Change the code of the scheduler to generate a single random number (between 0 and the total number of the allocated tickets), which will represent a ticket number. The scheduler then will chose the process owning that ticket for execution. #task2.1
-// TODO: add a system call: int schedp(int sched_policy_id), which will be used to change the sub-policy used – and will re-distribute the tickets accordingly. #task2.1
+// DONE: add a system call: int schedp(int sched_policy_id), which will be used to change the sub-policy used – and will re-distribute the tickets accordingly. #task2.1
 
 //changed #task1.2
 
@@ -380,7 +380,7 @@ scheduler(void) {
     int nTotalTickets = 0; // note: _Idan_ avoid divide by zero
     uint xTicks = 0;
 
-    schedp(currentPolicy); // TODO: change this location
+    schedp(currentPolicy); // TODO: change this location?
     // changed #end
 
     for (;;) {
@@ -654,6 +654,13 @@ int wait_stat(int *status, struct perf * performance) {
         }
     }
     return pid;
+}
+
+// changed: adding 'void policy(int);' system call function implementation #task2.1
+
+// sets the scheduler policy
+void policy(int sched_policy_id){
+    schedp(sched_policy_id); // NOTE: ignore schedp return value
 }
 
 // changed #end

@@ -26,6 +26,7 @@ int sleep(int);
 int uptime(void);
 void priority(int); // changed #task2.1
 int wait_stat(int *status, struct perf *); // changed #task2.2
+void policy(int); // changed #task2.1
 
 // ulib.c
 int stat(char*, struct stat*);

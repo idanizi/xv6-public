@@ -133,4 +133,15 @@ int sys_wait_stat(void){
 
     return wait_stat(status,performance);
 }
+
+// system call to support user space program 'policy' to change scheduler policy.
+int sys_policy(void) {
+    int sched_policy_id;
+    if (argint(0, &sched_policy_id) < 0)
+        return -1; // fail
+
+    policy(sched_policy_id);
+
+    return 0; // success
+}
 // changed #end

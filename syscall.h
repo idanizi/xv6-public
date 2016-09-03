@@ -23,4 +23,5 @@
 // changed #task2.1 #task2.2
 #define SYS_priority  22
 #define SYS_wait_stat 23
+#define SYS_policy 24
 // changed #end

@@ -62,10 +62,7 @@ enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 // DONE: __Idan:__ add a field to the process control block PCB ( see proc.h – the proc structure ) in order to save an exit status of the terminated process #task1 #wormUp
 // DONE: __Idan:__ Next, you have to change all system calls affected by this change ( i.e., exit and wait ) #task1 #wormUp
 // DONE: add field 'nTickets' to proc struct #task2.1
-
-
-
-// TODO: Write a user space program called policy which accepts a single argument – the policy identifier. The program must update the scheduling policy accordingly. #task2.1
+// DONE: Write a user space program called policy which accepts a single argument – the policy identifier. The program must update the scheduling policy accordingly. #task2.1
 
 
 // Per-process state
