@@ -103,7 +103,7 @@ sys_uptime(void)
         return xticks;
 }
 
-// changed: adding system calls that need to be handled by the kernel #task2.1
+// changed: adding system calls that need to be handled by the kernel #task2.1 #task2.2
 
 // system call to change process priority
 int sys_priority(void){
@@ -119,7 +119,18 @@ int sys_priority(void){
 }
 
 // system call to extract information and present to the user - process times
-int sys_wait_stat(void){ // TODO: implement this function
-        return 0;
+int sys_wait_stat(void){
+    int *status;
+    struct perf *performance;
+
+    if (argptr(0, (char **) &status, sizeof(int *)) < 0) {
+        return -1;
+    }
+
+    if (argptr(0, (char **) &performance, sizeof(struct perf *)) < 0) {
+        return -1;
+    }
+
+    return wait_stat(status,performance);
 }
 // changed #end
