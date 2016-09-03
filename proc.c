@@ -27,6 +27,8 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
+static int uptime();
+
 void
 pinit(void) {
     initlock(&ptable.lock, "ptable");
@@ -62,7 +64,7 @@ allocproc(void) {
         p->priority = 1;
     }
     // changed #task2.2
-    p->cTime = ticks; // NOTE: creation time stamp
+    p->cTime = uptime(); // NOTE: creation time stamp
     // init all time counters to zero
     p->tTime = 0;
     p->sTime = 0;
@@ -631,6 +633,7 @@ struct proc * getProcessByPid(int pid){
     acquire(&ptable.lock);
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
         if(p->pid == pid){
+            release(&ptable.lock);
             return p;
         }
     }
@@ -651,6 +654,13 @@ int wait_stat(int *status, struct perf * performance) {
             performance->sTime = p->sTime;
             performance->reTime = p->reTime;
             performance->ruTime = p->ruTime;
+
+            // TODO delete
+            cprintf("kernel: proc.c: performance->tTime = %d\n", performance->tTime);
+            cprintf("kernel: proc.c: performance->cTime = %d\n", performance->cTime);
+            cprintf("kernel: proc.c: performance->reTime = %d\n", performance->reTime);
+            cprintf("kernel: proc.c: performance->ruTime = %d\n", performance->ruTime);
+            cprintf("kernel: proc.c: performance->sTime = %d\n", performance->sTime);
         } else {
             return -1; // failure
         }
