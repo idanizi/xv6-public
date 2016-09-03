@@ -15,53 +15,45 @@
 
 
 // linked list for all active processes
-struct pNode{
+struct pNode {
     int pid;
     struct pNode *next;
 };
 
 int areChildrenRunning(struct pNode *node) {
-    while(node){
+    while (node) {
         return 1;
     }
     return 0;
-//    int i;
-//    for (i = 0; i < PROCESSES_SIZE; i++) {
-//        if (processes[i]) {
-//            return 1;
-//        }
-//    }
-//    return 0;
 }
 
 // remove child process from process list
 void removeChildFromRunningList(int pid, struct pNode *node) {
     struct pNode *nodeToDelete = 0;
     struct pNode *prev = node;
-    while(node){
-        if(node->pid == pid){
+    while (node) {
+        if (node->pid == pid) {
             nodeToDelete = node;
             prev->next = node->next;
-            if(nodeToDelete)
+            if (nodeToDelete)
                 free(nodeToDelete);
             return;
         }
         prev = node;
         node = node->next;
     }
+}
 
-//    int i;
-//    for (i = 0; i < PROCESSES_SIZE; i++) {
-//        if (processes[i] == pid) {
-//            processes[i] = 0;
-//            return;
-//        }
-//    }
+void addChildToRunningList(int childPid, struct pNode *node) {
+    while (node && node->pid && node->next) {
+        node = node->next;
+    }
+    node->next = (struct pNode *)malloc(sizeof(struct pNode));
 }
 
 // recursive private function to free node list
-void freeList(struct pNode *node){
-    if(!node->next){
+void freeList(struct pNode *node) {
+    if (!node->next) {
         free(node);
         return;
     }
@@ -69,8 +61,8 @@ void freeList(struct pNode *node){
 }
 
 // private constructor
-struct pNode *newProcessList(){
-    struct pNode *processList = (pNode*)malloc(sizeof(pNode));
+struct pNode *newProcessList() {
+    struct pNode *processList = (struct pNode *) malloc(sizeof(struct pNode));
     processList->pid = 0;
     processList->next = 0;
     return processList;
@@ -88,25 +80,12 @@ int main(int argc, char **argv) {
     int turnaroundAverage = 0;
     int xTicks = 0;
 
-    printf(1, "c0\n"); // TODO delete
     struct pNode *processList = 0;
     processList = newProcessList();
-
-    struct pNode *curr = 0;
-
-//    int *processes;
-//    processes = (int *) malloc(sizeof(int) * PROCESSES_SIZE);
-    printf(1, "c1\n");// TODO delete
 
     struct perf *performance;
     performance = (struct perf *) malloc(sizeof(struct pref *));
 
-    // init array to zero
-//    for (i = 0; i < PROCESSES_SIZE; i++) {
-//        printf(1, " c.c%d\n", i);// TODO delete
-//        printf(1, "processes[%d] = %d\n", i, processes[i]);// TODO delete
-////        processes[i] = 0;
-//    }
     // TODO: fork 30 child processes: 10 processes of each of the following kinds:
 
     /*
@@ -114,9 +93,8 @@ int main(int argc, char **argv) {
      * system calls are allowed). This computation must take at least 30 ticks (you can use the uptime
      * system call to check if a tick passed).
      * */
-    curr = processList;
     for (i = 0; i < CPU_ONLY; i++) {
-        if (curr && (curr->pid = fork()) == 0) {
+        if ((childPid = fork()) == 0) {
             // DONE: child code for cpu only
             xTicks = uptime();
             atoi("123");
@@ -133,12 +111,7 @@ int main(int argc, char **argv) {
             atoi("789");
             xTicks = uptime() - xTicks;
         }
-        if(i+1 < CPU_ONLY){
-            curr->next = (pNode*)malloc(sizeof(pNode));
-            curr->next->next = 0;
-            curr->next->pid = 0;
-        }
-        curr = curr->next;
+        addChildToRunningList(childPid, processList);
     }
 
     printf(1, "checking... xTicks: %d\n", xTicks);
@@ -194,7 +167,7 @@ int main(int argc, char **argv) {
     // memory free
     if (performance)
         free(performance);
-    if (processes)
+    if (processList)
         freeList(processList);
 
     exit(0);
