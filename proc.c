@@ -224,9 +224,11 @@ void exit(int status) { // CHANGED
     }
 
     // changed: store the exit status of the terminated process #task1
-    proc->status = status;
+    if (proc)
+        proc->status = status;
     // changed: update process termination time #task2.2
-    proc->tTime = ticks;
+    if (proc)
+        proc->tTime = ticks;
     // changed #end
 
     // Jump into the scheduler, never to return.
@@ -458,7 +460,7 @@ yield(void) {
     acquire(&ptable.lock);  //DOC: yieldlock
 
     // changed give less 1 ticket to process, dynamic policy #task2.1
-    if (currentPolicy == DYNAMIC_POLICY) {
+    if (currentPolicy == DYNAMIC_POLICY && proc) {
         proc->nTickets--;
         if (proc->nTickets < 1) { proc->nTickets = 1; }
     }
@@ -538,7 +540,7 @@ wakeup1(void *chan) {
         }
 
         // changed #task1.2
-        if(currentPolicy == DYNAMIC_POLICY){
+        if(currentPolicy == DYNAMIC_POLICY && p){
             p->nTickets += 10;
             if (p->nTickets > 100) { p->nTickets = 100; }
         }

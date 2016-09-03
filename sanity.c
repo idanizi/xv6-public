@@ -11,6 +11,7 @@
 #define BLOCKED_ONLY_OFFSET 10
 #define MIXED 10
 #define MIXED_OFFSET 20
+#define PROCESSES_SIZE CPU_ONLY + BLOCKED_ONLY + MIXED
 
 
 // linked list for all active processes

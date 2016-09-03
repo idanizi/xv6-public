@@ -49,12 +49,14 @@ void trap(struct trapframe *tf)
                 ticks++;
                 // DONE: update proc struct after every clock tick #task2.2
                 // changed #task2.2
-                if (proc->state == SLEEPING) {
-                    proc->sTime++;
-                } else if (proc->state == RUNNABLE) {
-                    proc->reTime++;
-                } else if (proc->state == RUNNING) {
-                    proc->ruTime++;
+                if(proc) { // avoid segfault
+                    if (proc->state == SLEEPING) {
+                        proc->sTime++;
+                    } else if (proc->state == RUNNABLE) {
+                        proc->reTime++;
+                    } else if (proc->state == RUNNING) {
+                        proc->ruTime++;
+                    }
                 }
                 // changed #end
                 wakeup(&ticks);
