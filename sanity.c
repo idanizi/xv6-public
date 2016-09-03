@@ -3,6 +3,7 @@
 #include "stat.h"
 #include "user.h"
 #include "perf.h"
+#include "spinlock.h"
 
 // CONSTANTS
 #define CPU_ONLY 10
@@ -13,7 +14,6 @@
 #define MIXED_OFFSET 20
 #define PROCESSES_SIZE CPU_ONLY + BLOCKED_ONLY + MIXED
 
-
 // linked list for all active processes
 struct pNode {
     int pid;
@@ -21,20 +21,22 @@ struct pNode {
 };
 
 int areChildrenRunning(struct pNode *node) {
-    while (node) {
+    if (node && node->pid) {
         return 1;
     }
     return 0;
 }
 
 // remove child process from process list
-void removeChildFromRunningList(int pid, struct pNode *node) {
+void removeChildFromRunningList(int pid, struct pNode *first) {
+    struct pNode *node = first;
     struct pNode *nodeToDelete = 0;
     struct pNode *prev = node;
-    while (node) {
+    while (node->next) {
         if (node->pid == pid) {
             nodeToDelete = node;
-            prev->next = node->next;
+            if (prev->next)
+                prev->next = node->next;
             if (nodeToDelete)
                 free(nodeToDelete);
             return;
@@ -44,11 +46,19 @@ void removeChildFromRunningList(int pid, struct pNode *node) {
     }
 }
 
+// private add to end of list
 void addChildToRunningList(int childPid, struct pNode *node) {
     while (node && node->pid && node->next) {
         node = node->next;
     }
-    node->next = (struct pNode *)malloc(sizeof(struct pNode));
+    if (node->pid == 0) { // first dummy node to overwrite
+        node->pid = childPid;
+    } else { // end of list
+        node->next = (struct pNode *) malloc(sizeof(struct pNode));
+        node = node->next;
+        node->pid = childPid;
+        node->next = 0;
+    }
 }
 
 // recursive private function to free node list
@@ -68,6 +78,34 @@ struct pNode *newProcessList() {
     return processList;
 }
 
+void listTest(struct pNode *list) {
+    struct pNode *node = list;
+    int num = 0;
+
+    printf(1, "testing list\n\n");
+    printf(1, "first pid: %d\n", node->pid);
+    printf(1, "first next: %d\n", node->next);
+    printf(1, "adding to list\n");
+    addChildToRunningList(1, list);
+    node = list;
+    num = 0;
+    while (node) {
+        num++;
+        node = node->next;
+    }
+    printf(1, "list count: %d\n", num);
+    printf(1, "removing from list\n");
+    removeChildFromRunningList(1, list);
+    node = list;
+    num = 0;
+    while (node) {
+        num++;
+        node = node->next;
+    }
+    printf(1, "list count: %d\n", num);
+    printf(1, "end testing list\n\n");
+}
+
 // user mode program to test OS performance
 int main(int argc, char **argv) {
 
@@ -79,24 +117,30 @@ int main(int argc, char **argv) {
     int runningAverage = 0;
     int turnaroundAverage = 0;
     int xTicks = 0;
+    int status = 0;
 
-    struct pNode *processList = 0;
-    processList = newProcessList();
+//    struct pNode *processList = 0;
+//    processList = newProcessList();
 
     struct perf *performance;
     performance = (struct perf *) malloc(sizeof(struct pref *));
 
-    // TODO: fork 30 child processes: 10 processes of each of the following kinds:
+    /////////// test list ////////////
+//    listTest(processList);
 
+
+    // TODO: fork 30 child processes: 10 processes of each of the following kinds:
     /*
      * CPU only: the processes will perform a cpu-only time-consuming computation (no blocking
      * system calls are allowed). This computation must take at least 30 ticks (you can use the uptime
      * system call to check if a tick passed).
      * */
     for (i = 0; i < CPU_ONLY; i++) {
-        if ((childPid = fork()) == 0) {
+        childPid = fork();
+        if (childPid == 0) {
             // DONE: child code for cpu only
             xTicks = uptime();
+            printf(1, "this is child %d\n", i);
             atoi("123");
             atoi("456");
             atoi("789");
@@ -110,39 +154,39 @@ int main(int argc, char **argv) {
             atoi("789");
             atoi("789");
             xTicks = uptime() - xTicks;
+            printf(1, "checking... xTicks: %d\n", xTicks);
+//            removeChildFromRunningList(getpid(), processList);
+            exit(0);
         }
-        addChildToRunningList(childPid, processList);
+        printf(1, "this is parent %d\n", i);
+//        addChildToRunningList(childPid, processList);
     }
-
-    printf(1, "checking... xTicks: %d\n", xTicks);
 
     /*
      * TODO: Blocking only: the processes will perform 30 sequential calls to the sleep system call (each of a
      * single tick).
      */
-    for (i = 0; i < BLOCKED_ONLY; i++) {
-//        if ((processes[i + BLOCKED_ONLY_OFFSET] = fork()) == 0) {
-//            // TODO: child code for blocking only
-//        }
-    }
+//    for (i = 0; i < BLOCKED_ONLY; i++) {
+//        // TODO: child code for blocking only
+//    }
 
     /*
      * TODO: Mixed: the processes will perform 5 sequential iterations of the following steps - cpu-only
      * computation for 5 ticks followed by system call sleep of a single tick.
      */
-    for (i = 0; i < MIXED; i++) {
-//        if ((processes[i + MIXED_OFFSET] = fork()) == 0) {
-//            // TODO: child code for mixed
-//        }
-    }
+//    for (i = 0; i < MIXED; i++) {
+//        // TODO: child code for mixed
+//    }
     /* DONE: The parent process will wait until all its children exit.
      * For every finished child, the parent process must print the waiting time, running time and turnaround time of each child.
      * In addition averages for these measures must be printed.
      */
 
-    while (areChildrenRunning(processList)) {
-        childPid = wait_stat(0, performance); // parent waiting for one child process to end
-        removeChildFromRunningList(childPid, processList);
+    while ((childPid = wait_stat(&status, performance)) != -1) {
+        printf(1, "test1\n");
+         // parent waiting for one child process to end
+        printf(1, "test2\n");
+        printf(1, "test3\n");
         if (childPid != -1 && performance) {
             printf(1, "Child pid: %d\n", childPid);
             printf(1, "> waiting time (SLEEPING + RUNNABLE): %d\n", (performance->sTime + performance->reTime));
@@ -167,8 +211,8 @@ int main(int argc, char **argv) {
     // memory free
     if (performance)
         free(performance);
-    if (processList)
-        freeList(processList);
+//    if (processList)
+//        freeList(processList);
 
     exit(0);
 }
