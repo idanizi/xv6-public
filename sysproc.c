@@ -119,7 +119,7 @@ int sys_priority(void){
 }
 
 // system call to extract information and present to the user - process times
-int sys_wait_stat(void){
+int sys_wait_stat(void) {
     int *status;
     struct perf *performance;
 
@@ -131,7 +131,7 @@ int sys_wait_stat(void){
         return -1;
     }
 
-    return wait_stat(status,performance);
+    return wait_stat(status, performance);
 }
 
 // system call to support user space program 'policy' to change scheduler policy.
