@@ -1,12 +1,13 @@
 // Segments in proc->gdt.
 #define NSEGS     7
 
-//changed: constants #task2.1
+//changed: constants #task2.1 #task3.1
 #define RANDOM_NUMBER_1 12345685L
 #define RANDOM_NUMBER_2 58251321L
 #define UNIFORM_POLICY 1
 #define PRIORITY_POLICY 2
 #define DYNAMIC_POLICY 3
+#define NUMSIG 32
 //changed #end
 
 // Per-CPU state
@@ -88,6 +89,8 @@ struct proc {
     int sTime;                   // CHANGED: the time the process spent on the SLEEPING state #task2.2
     int reTime;                  // CHANGED: the time the process spent on the READY state #task2.2
     int ruTime;                  // CHANGED: the time the process spent on the RUNNING state #task2.2
+    int pending;                 // CHANGED: pending signals to be handled #task3.1
+    sighandler_t handlers[NUMSIG]; // CHANGED: handler functions array #task3.2
 };
 
 // Process memory is laid out contiguously, low addresses first:

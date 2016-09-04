@@ -111,3 +111,9 @@ void trap(struct trapframe *tf)
     if (proc && proc->killed && (tf->cs & 3) == DPL_USER)
         exit(0); // changed
 }
+
+//changed #task3.1
+void defaultHandler(int signum){
+    cprintf("A signal %d was accepted by process %d\n", signum, proc->pid);
+}
+//changed #end
