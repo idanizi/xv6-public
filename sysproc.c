@@ -144,4 +144,18 @@ int sys_policy(void) {
 
     return 0; // success
 }
+
+int sys_signal(void){
+    int signum;
+    sighandler_t handler;
+
+    if (argint(0, &signum) < 0)
+        return -1; // fail
+
+    if (argptr(1, (char **) &handler, sizeof(sighandler_t)) < 0) {
+        return -1;
+    }
+
+    return (int) signal(signum, handler);
+}
 // changed #end

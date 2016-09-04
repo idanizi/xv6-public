@@ -24,4 +24,6 @@
 #define SYS_priority  22
 #define SYS_wait_stat 23
 #define SYS_policy 24
+#define SYS_signal 25
+
 // changed #end

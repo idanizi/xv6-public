@@ -717,4 +717,22 @@ void policy(int sched_policy_id){
     schedp(sched_policy_id); // NOTE: ignore schedp return value
 }
 
+//proc->pending |= (1<<signum); // NOTE: save this line for later use
+
+// changed #task3.2
+// registering new signal handler in the array of signal-handlers of the process
+sighandler_t signal(int signum, sighandler_t handler){ // TODO implement
+    sighandler_t prev;
+    if(proc && (signum >= 0 && signum <= 31)){
+        acquire(&ptable.lock);
+        prev = proc->handlers[signum];
+        proc->handlers[signum] = handler;
+        release(&ptable.lock);
+        return prev;
+    }
+    return (sighandler_t) -1;
+}
+
+
+
 // changed #end

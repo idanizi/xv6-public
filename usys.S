@@ -32,4 +32,5 @@ SYSCALL(uptime)
 SYSCALL(priority)
 SYSCALL(wait_stat)
 SYSCALL(policy)
+SYSCALL(signal)
 
