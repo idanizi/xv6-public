@@ -15,6 +15,14 @@ void implicitExit(){
     asm("int %0"          :: "i" (T_SYSCALL));
 }
 void endImplicitExit(){}
+
+// changed: Adding implicit return from signal-handler #task3.4
+void implicitReturnFromSignalHandler(){
+    asm("movl %0 , %%eax" :: "i" (SYS_sigreturn));
+    asm("int %0"          :: "i" (T_SYSCALL));
+}
+void endImplicitReturnFromSignalHandler(){}
+
 // changed #end
 
 int exec(char *path, char **argv) {
@@ -76,6 +84,17 @@ int exec(char *path, char **argv) {
 //    int codeOffsetOnStack = sp;
     if(copyout(pgdir, sp, implicitExit, codeLength) < 0)
         goto bad;
+
+    // changed: getting the address of the injecting code of implicitExit() #task3.4
+    int codeLength2 = endImplicitReturnFromSignalHandler - implicitReturnFromSignalHandler;
+    sp -= codeLength2;
+    if(copyout(pgdir, sp, implicitReturnFromSignalHandler, codeLength2) < 0)
+        goto bad;
+
+    if(proc){
+        proc->retAddress = sz - codeLength2;
+    }
+
     // changed #end
 
     // Push argument strings, prepare rest of stack in ustack.

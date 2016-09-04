@@ -1,3 +1,5 @@
+#include "x86.h"
+
 // Segments in proc->gdt.
 #define NSEGS     7
 
@@ -91,6 +93,9 @@ struct proc {
     int ruTime;                  // CHANGED: the time the process spent on the RUNNING state #task2.2
     int pending;                 // CHANGED: pending signals to be handled #task3.1
     sighandler_t handlers[NUMSIG]; // CHANGED: handler functions array #task3.2
+    struct trapframe btf;         // CHANGED: backup trapframe before running signal handler function #task3.4
+    int retAddress;               // CHANGED: the return address for returning from the signal-handler function #task3.4
+    int isHandled;                // CHANGED: boolean for indicating if the process is handling a signal #task3.4
 };
 
 // Process memory is laid out contiguously, low addresses first:

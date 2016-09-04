@@ -757,9 +757,13 @@ int sigsend(int pid, int signum){
     return -1;
 }
 
-int sigreturn(void){ // TODO implement
-
-    return 0; // TODO change
+int sigreturn(void){
+    if(proc){
+        *(proc->tf) = proc->btf;
+        proc->isHandled = 0;
+        return 0;
+    }
+    return -1;
 }
 
 // changed #end
