@@ -25,5 +25,6 @@
 #define SYS_wait_stat 23
 #define SYS_policy 24
 #define SYS_signal 25
+#define SYS_sigsend 26
 
 // changed #end

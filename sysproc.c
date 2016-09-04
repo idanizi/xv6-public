@@ -158,4 +158,17 @@ int sys_signal(void){
 
     return (int) signal(signum, handler);
 }
+
+int sys_sigsend(void){
+    int pid;
+    int signum;
+
+    if (argint(0, &pid) < 0)
+        return -1; // fail
+
+    if (argint(1, &signum) < 0)
+        return -1; // fail
+
+    return sigsend(pid, signum);
+}
 // changed #end

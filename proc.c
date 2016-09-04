@@ -717,11 +717,10 @@ void policy(int sched_policy_id){
     schedp(sched_policy_id); // NOTE: ignore schedp return value
 }
 
-//proc->pending |= (1<<signum); // NOTE: save this line for later use
 
 // changed #task3.2
 // registering new signal handler in the array of signal-handlers of the process
-sighandler_t signal(int signum, sighandler_t handler){ // TODO implement
+sighandler_t signal(int signum, sighandler_t handler){
     sighandler_t prev;
     if(proc && (signum >= 0 && signum <= 31)){
         acquire(&ptable.lock);
@@ -733,6 +732,29 @@ sighandler_t signal(int signum, sighandler_t handler){ // TODO implement
     return (sighandler_t) -1;
 }
 
+// changed #task3.3
+// sending a signal (signum) to process (pid)
+int sigsend(int pid, int signum){
+    struct proc *p;
+    int found = 0;
 
+    // mutex critical section
+    acquire(&ptable.lock);
+    for (p = ptable.proc; p < &ptable.proc[NPROC] && !found; p++) {
+        if(p->pid == pid){
+            found = 1;
+        }
+    }
+
+    if (found)
+        p->pending |= (1 << signum); // light the candle! (signal bit)
+    release(&ptable.lock);
+    // end mutex
+
+    if (found)
+        return 0;
+
+    return -1;
+}
 
 // changed #end

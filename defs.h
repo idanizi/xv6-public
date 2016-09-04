@@ -123,6 +123,7 @@ void            priority(int); // changed #task2.1
 int             wait_stat(int *status, struct perf *); // changed #task2.2
 void            policy(int); // changed #task2.1
 sighandler_t    signal(int signum, sighandler_t handler); // changed #task3.2
+int             sigsend(int pid, int signum); // changed #tash3.3
 
 // swtch.S
 void            swtch(struct context**, struct context*);
