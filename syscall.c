@@ -106,6 +106,7 @@ extern int sys_wait_stat(void); // changed #task2.2
 extern int sys_policy(void); // changed #task2.1
 extern int sys_signal(void); // changed #task3.2
 extern int sys_sigsend(void); // changed #task3.3
+extern int sys_sigreturn(void); // changed #task3.4
 
 static int (*syscalls[])(void) = {
         [SYS_fork]    sys_fork,
@@ -134,6 +135,7 @@ static int (*syscalls[])(void) = {
         [SYS_policy] sys_policy, // changed #task2.1
         [SYS_signal] sys_signal, // changed #task3.2
         [SYS_signal] sys_sigsend, // changed #task3.3
+        [SYS_sigreturn] sys_sigreturn, // changed #task3.4
 };
 
 void

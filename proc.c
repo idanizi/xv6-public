@@ -757,4 +757,9 @@ int sigsend(int pid, int signum){
     return -1;
 }
 
+int sigreturn(void){ // TODO implement
+
+    return 0; // TODO change
+}
+
 // changed #end

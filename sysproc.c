@@ -171,4 +171,8 @@ int sys_sigsend(void){
 
     return sigsend(pid, signum);
 }
+
+int sys_sigreturn(void){
+    return sigreturn();
+}
 // changed #end

@@ -34,4 +34,5 @@ SYSCALL(wait_stat)
 SYSCALL(policy)
 SYSCALL(signal)
 SYSCALL(sigsend)
+SYSCALL(sigreturn)
 
