@@ -131,12 +131,6 @@ int sys_wait_stat(void) {
         return -1;
     }
 
-    cprintf("kernel: performance->tTime = %d\n", performance->tTime);
-    cprintf("kernel: performance->cTime = %d\n", performance->cTime);
-    cprintf("kernel: performance->reTime = %d\n", performance->reTime);
-    cprintf("kernel: performance->ruTime = %d\n", performance->ruTime);
-    cprintf("kernel: performance->sTime = %d\n", performance->sTime);
-
     return wait_stat(status, performance);
 }
 

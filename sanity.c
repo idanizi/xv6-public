@@ -29,13 +29,14 @@ int main(int argc, char **argv) {
 
     struct perf *performance;
     performance = (struct perf *) malloc(sizeof(struct perf));
-    performance->sTime = 1;
-    performance->cTime = 2;
-    performance->reTime = 3;
-    performance->ruTime = 4;
-    performance->tTime = 5;
+    // init zero
+    performance->sTime = 0;
+    performance->cTime = 0;
+    performance->reTime = 0;
+    performance->ruTime = 0;
+    performance->tTime = 0;
 
-    // TODO: fork 30 child processes: 10 processes of each of the following kinds:
+    // DONE: fork 30 child processes: 10 processes of each of the following kinds:
     /*
      * CPU only: the processes will perform a cpu-only time-consuming computation (no blocking
      * system calls are allowed). This computation must take at least 30 ticks (you can use the uptime
@@ -52,13 +53,13 @@ int main(int argc, char **argv) {
     }
 
     /*
-     * TODO: Blocking only: the processes will perform 30 sequential calls to the sleep system call (each of a
+     * DONE: Blocking only: the processes will perform 30 sequential calls to the sleep system call (each of a
      * single tick).
      */
     for (i = 0; i < BLOCKED_ONLY; i++) {
         childPid = fork();
         if (childPid == 0) {
-            // TODO: child code for blocking only
+            // DONE: child code for blocking only
             for (j = 0; j < 30; j++) {
                 sleep(1);
             }
@@ -67,14 +68,14 @@ int main(int argc, char **argv) {
     }
 
     /*
-     * TODO: Mixed: the processes will perform 5 sequential iterations of the following steps - cpu-only
+     * DONE: Mixed: the processes will perform 5 sequential iterations of the following steps - cpu-only
      * computation for 5 ticks followed by system call sleep of a single tick.
      */
     for (i = 0; i < MIXED; i++) {
         xTicks = uptime();
         childPid = fork();
         if (childPid == 0) {
-            // TODO: child code for mixed
+            // DONE: child code for mixed
             for (j = 0; j < 5; j++) {
                 while (uptime() - xTicks < 5) {}
                 sleep(1);
@@ -90,11 +91,13 @@ int main(int argc, char **argv) {
     // parent waiting for a child process to end
     while ((childPid = wait_stat(&status, performance)) > 0) {
         if (performance) {
-            printf(1, "--- performance->sTime: %d\n", performance->sTime);
-            printf(1, "--- performance->tTime: %d\n", performance->tTime);
-            printf(1, "--- performance->ruTime: %d\n", performance->ruTime);
-            printf(1, "--- performance->reTime: %d\n", performance->reTime);
-            printf(1, "--- performance->cTime: %d\n", performance->cTime);
+            // NOTE: off
+//            printf(1, "sanity.c: performance->sTime: %d\n", performance->sTime);
+//            printf(1, "sanity.c: performance->tTime: %d\n", performance->tTime);
+//            printf(1, "sanity.c: performance->ruTime: %d\n", performance->ruTime);
+//            printf(1, "sanity.c: performance->reTime: %d\n", performance->reTime);
+//            printf(1, "sanity.c: performance->cTime: %d\n", performance->cTime);
+
             printf(1, "Child pid: %d\n", childPid);
             printf(1, "> waiting time (SLEEPING + RUNNABLE): %d\n", (performance->sTime + performance->reTime));
             printf(1, "> running time (RUNNING): %d\n", performance->ruTime);
@@ -118,8 +121,6 @@ int main(int argc, char **argv) {
     // memory free
     if (performance)
         free(performance);
-//    if (processList)
-//        freeList(processList);
 
     exit(0);
 }

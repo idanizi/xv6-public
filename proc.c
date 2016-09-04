@@ -70,6 +70,7 @@ allocproc(void) {
     p->sTime = 0;
     p->reTime = 0;
     p->ruTime = 0;
+
     // changed #end
     p->pid = nextpid++;
     release(&ptable.lock);
@@ -123,6 +124,9 @@ userinit(void) {
     safestrcpy(p->name, "initcode", sizeof(p->name));
     p->cwd = namei("/");
 
+    // changed #task2.3
+    p->reTime = ticks - p->reTime;
+    // changed #end
     p->state = RUNNABLE;
 }
 
@@ -182,6 +186,9 @@ fork(void) {
 
     // lock to force the compiler to emit the np->state write last.
     acquire(&ptable.lock);
+
+    np->reTime = ticks - np->reTime; // changed #task2.3
+
     np->state = RUNNABLE;
     release(&ptable.lock);
 
@@ -264,10 +271,10 @@ int wait(int *status) { // changed
                 p->parent = 0;
                 p->name[0] = 0;
                 p->killed = 0;
-                release(&ptable.lock);
                 if(status){ // CHANGED: return the exit status of child
                     *status = p->status;
                 }
+                release(&ptable.lock);
                 return pid;
             }
         }
@@ -360,9 +367,9 @@ int uptime()
 {
     uint xticks;
 
-    acquire(&tickslock);
+//    acquire(&tickslock);
     xticks = ticks;
-    release(&tickslock);
+//    release(&tickslock);
     return xticks;
 }
 
@@ -384,7 +391,7 @@ scheduler(void) {
     int nTotalTickets = 0; // note: _Idan_ avoid divide by zero
     uint xTicks = 0;
 
-    schedp(currentPolicy); // TODO: change this location?
+    schedp(currentPolicy);
     // changed #end
 
     for (;;) {
@@ -424,6 +431,9 @@ scheduler(void) {
             // before jumping back to us.
             proc = p;
             switchuvm(p);
+
+            p->reTime = ticks - p->reTime; // changed #task2.3
+
             p->state = RUNNING;
             swtch(&cpu->scheduler, proc->context);
             switchkvm();
@@ -466,6 +476,9 @@ yield(void) {
         proc->nTickets--;
         if (proc->nTickets < 1) { proc->nTickets = 1; }
     }
+
+    // changed #task2.3
+    proc->reTime = ticks - proc->reTime;
     //changed #end
 
     proc->state = RUNNABLE;
@@ -515,6 +528,7 @@ sleep(void *chan, struct spinlock *lk) {
     }
 
     // Go to sleep.
+    proc->sTime = ticks - proc->sTime; // changed: start count sleeping time #task2.3
     proc->chan = chan;
     proc->state = SLEEPING;
     sched();
@@ -539,6 +553,10 @@ wakeup1(void *chan) {
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
         if (p->state == SLEEPING && p->chan == chan) {
             p->state = RUNNABLE;
+            // changed: count performance times #task2.3
+            p->sTime = ticks - p->sTime;
+            p->reTime = ticks - p->reTime;
+            // changed #end
         }
 
         // changed #task1.2
@@ -629,43 +647,67 @@ void priority(int priorityNumber){
 
 // private function to retrieve process by its pid
 struct proc * getProcessByPid(int pid){
-    struct proc *p = 0;
-    acquire(&ptable.lock);
+    struct proc *p;
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
         if(p->pid == pid){
-            release(&ptable.lock);
             return p;
         }
     }
-    release(&ptable.lock);
-    return p;
+    return 0;
 }
 
 // extracting the process times information and presenting it to the user.
 int wait_stat(int *status, struct perf * performance) {
-    int pid = -1;
-    struct proc *p = 0;
-    pid = wait(status);
-    if (pid != -1) {
-        p = getProcessByPid(pid);
-        if (p) {
-            performance->cTime = p->cTime;
-            performance->tTime = p->tTime;
-            performance->sTime = p->sTime;
-            performance->reTime = p->reTime;
-            performance->ruTime = p->ruTime;
 
-            // TODO delete
-            cprintf("kernel: proc.c: performance->tTime = %d\n", performance->tTime);
-            cprintf("kernel: proc.c: performance->cTime = %d\n", performance->cTime);
-            cprintf("kernel: proc.c: performance->reTime = %d\n", performance->reTime);
-            cprintf("kernel: proc.c: performance->ruTime = %d\n", performance->ruTime);
-            cprintf("kernel: proc.c: performance->sTime = %d\n", performance->sTime);
-        } else {
-            return -1; // failure
+    ///////// regular wait(int*) code with changes
+    struct proc *p;
+    int havekids, pid;
+
+    acquire(&ptable.lock);
+    for (;;) {
+        // Scan through table looking for zombie children.
+        havekids = 0;
+        for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+            if (p->parent != proc)
+                continue;
+            havekids = 1;
+            if (p->state == ZOMBIE) {
+                // Found one.
+                // changed: supporting updating performance struct #task2.3
+                performance->cTime = p->cTime;
+                performance->tTime = p->tTime;
+                performance->sTime = p->sTime;
+                performance->reTime = p->reTime;
+                performance->ruTime = p->ruTime;
+                // changed #end
+                pid = p->pid;
+                kfree(p->kstack);
+                p->kstack = 0;
+                freevm(p->pgdir);
+                p->state = UNUSED;
+                p->pid = 0;
+                p->parent = 0;
+                p->name[0] = 0;
+                p->killed = 0;
+                if(status){
+                    *status = p->status;
+                }
+                release(&ptable.lock);
+                return pid;
+            }
         }
+
+        // No point waiting if we don't have any children.
+        if (!havekids || proc->killed) {
+            release(&ptable.lock);
+            return -1;
+        }
+
+        // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+        sleep(proc, &ptable.lock);  //DOC: wait-sleep
     }
-    return pid;
+
+    /////////// end of regular wait(int*) code
 }
 
 // changed: adding 'void policy(int);' system call function implementation #task2.1
