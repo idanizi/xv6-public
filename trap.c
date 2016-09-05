@@ -134,10 +134,9 @@ void genericSignalHandler(struct trapframe *tf) {
             }
         }
 
-        // TODO: user space program to send signals and test it.
+        // DONE: user space program to send signals and test it.
 
         if (proc->handlers[signum] == (sighandler_t) -1) {
-            cprintf("pid: %d signum: %d\n", proc->pid, signum); // TODO delete
             defaultHandler(signum);
         } else {
             proc->btf = *(proc->tf);
