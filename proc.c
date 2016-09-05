@@ -77,7 +77,6 @@ allocproc(void) {
     int i;
     for(i = 0; i < NUMSIG; i++){
         p->handlers[i] = (sighandler_t) -1;
-//        cprintf("pid: %d p->handlers[%d] = (sighandler_t) -1;\n", p->pid, i);
     }
     // changed #end
 
@@ -223,9 +222,6 @@ void exit(int status) { // CHANGED
 
     if (proc == initproc)
         panic("init exiting");
-
-    // TODO delete
-    cprintf("proc.c exit: pid: %d pending: %d\n", proc->pid, proc->pending);
 
     // Close all open files.
     for (fd = 0; fd < NOFILE; fd++) {
@@ -771,8 +767,6 @@ int sigsend(int pid, int signum){
 
     if (found)
         p->pending |= (1 << signum); // light the candle! (signal bit)
-
-    cprintf("pid: %d pending: %d\n", p->pid, p->pending);
 
     release(&ptable.lock);
     // end mutex
