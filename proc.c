@@ -55,6 +55,7 @@ allocproc(void) {
 
     found:
     p->state = EMBRYO;
+    p->pid = nextpid++;
     // changed: The priority of a new processes is 10 / 20 / 1. #task2.1
     if(currentPolicy == UNIFORM_POLICY) {
         p->priority = 10;
@@ -71,8 +72,17 @@ allocproc(void) {
     p->reTime = 0;
     p->ruTime = 0;
 
+    // changed #task3.4
+    // init all the handlers to be default
+    int i;
+    for(i = 0; i < NUMSIG; i++){
+        p->handlers[i] = (sighandler_t) -1;
+//        cprintf("pid: %d p->handlers[%d] = (sighandler_t) -1;\n", p->pid, i);
+    }
     // changed #end
-    p->pid = nextpid++;
+
+    // changed #end
+
     release(&ptable.lock);
 
     // Allocate kernel stack.
@@ -85,6 +95,8 @@ allocproc(void) {
     // Leave room for trap frame.
     sp -= sizeof *p->tf;
     p->tf = (struct trapframe *) sp;
+
+
 
     // Set up new context to start executing at forkret,
     // which returns to trapret.
@@ -126,6 +138,13 @@ userinit(void) {
 
     // changed #task2.3
     p->reTime = ticks - p->reTime;
+
+    // changed #task3.4
+    // init all the handlers to be default
+//    int i;
+//    for(i = 0; i < NUMSIG; i++){
+//        p->handlers[i] = (sighandler_t) -1;
+//    }
     // changed #end
     p->state = RUNNABLE;
 }
@@ -204,6 +223,9 @@ void exit(int status) { // CHANGED
 
     if (proc == initproc)
         panic("init exiting");
+
+    // TODO delete
+    cprintf("proc.c exit: pid: %d pending: %d\n", proc->pid, proc->pending);
 
     // Close all open files.
     for (fd = 0; fd < NOFILE; fd++) {
@@ -743,11 +765,15 @@ int sigsend(int pid, int signum){
     for (p = ptable.proc; p < &ptable.proc[NPROC] && !found; p++) {
         if(p->pid == pid){
             found = 1;
+            break;
         }
     }
 
     if (found)
         p->pending |= (1 << signum); // light the candle! (signal bit)
+
+    cprintf("pid: %d pending: %d\n", p->pid, p->pending);
+
     release(&ptable.lock);
     // end mutex
 
@@ -759,8 +785,10 @@ int sigsend(int pid, int signum){
 
 int sigreturn(void){
     if(proc){
+        acquire(&ptable.lock);
         *(proc->tf) = proc->btf;
         proc->isHandled = 0;
+        release(&ptable.lock);
         return 0;
     }
     return -1;

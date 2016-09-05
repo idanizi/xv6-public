@@ -120,29 +120,31 @@ void defaultHandler(int signum){
 }
 
 // changed #task3.4
-void genericSignalHandler(struct trapframe *tf){
+void genericSignalHandler(struct trapframe *tf) {
     int i = 0;
     int signum = 0;
-    if(proc && ((proc->tf->cs & 3) == DPL_USER) && proc->pending && !proc->isHandled){
+
+    if (proc && (((tf->cs) & 3) == DPL_USER) && proc->pending && !proc->isHandled) {
         proc->isHandled = 1;
-        for(i = 0; i < NUMSIG; i++){
-            if(proc->pending & 1<<i){
+        for (i = 0; i < NUMSIG; i++) {
+            if (proc->pending & (1 << i)) {
                 signum = i;
-                proc->pending ^= 1<<signum; // toggling bit
+                proc->pending &= ~(1 << signum); // reset bit
+                break;
             }
         }
 
-        // TODO: to init all the handlers to be default (in allocproc proc.c)
         // TODO: user space program to send signals and test it.
 
-        if((int)proc->handlers[signum] == -1){
+        if (proc->handlers[signum] == (sighandler_t) -1) {
+            cprintf("pid: %d signum: %d\n", proc->pid, signum); // TODO delete
             defaultHandler(signum);
-        }else{
+        } else {
             proc->btf = *(proc->tf);
             proc->tf->esp -= 4;
-            memmove((void*) proc->tf->esp, &signum, 4);
+            memmove((void *) proc->tf->esp, &signum, 4);
             proc->tf->esp -= 4;
-            memmove((void*) proc->tf->esp, &proc->retAddress, 4);
+            memmove((void *) proc->tf->esp, &proc->retAddress, 4);
             proc->tf->eip = (uint) proc->handlers[signum];
         }
     }

@@ -163,6 +163,7 @@ void            idtinit(void);
 extern uint     ticks;
 void            tvinit(void);
 extern struct spinlock tickslock;
+void defaultHandler(int); // changed #task3.4
 
 // uart.c
 void            uartinit(void);

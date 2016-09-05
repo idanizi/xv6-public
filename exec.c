@@ -92,7 +92,7 @@ int exec(char *path, char **argv) {
         goto bad;
 
     if(proc){
-        proc->retAddress = sz - codeLength2;
+        proc->retAddress = sp;
     }
 
     // changed #end

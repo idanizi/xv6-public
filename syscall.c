@@ -134,7 +134,7 @@ static int (*syscalls[])(void) = {
         [SYS_wait_stat] sys_wait_stat, // changed #task2.2
         [SYS_policy] sys_policy, // changed #task2.1
         [SYS_signal] sys_signal, // changed #task3.2
-        [SYS_signal] sys_sigsend, // changed #task3.3
+        [SYS_sigsend] sys_sigsend, // changed #task3.3
         [SYS_sigreturn] sys_sigreturn, // changed #task3.4
 };
 
