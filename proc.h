@@ -1,6 +1,9 @@
 // Segments in proc->gdt.
 #define NSEGS     7
 
+#include "spinlock.h"
+#include "kthread.h"
+
 // Per-CPU state
 struct cpu {
   uchar id;                    // Local APIC ID; index into cpus[] below
@@ -14,6 +17,7 @@ struct cpu {
   // Cpu-local storage variables; see below
   struct cpu *cpu;
   struct proc *proc;           // The currently-running process.
+  struct thread *thread;       // changed: The currently-running thread.
 };
 
 extern struct cpu cpus[NCPU];
@@ -66,6 +70,8 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  struct spinlock lock;        // changed: Process lock for threads sync
+  struct thread threads[NTHREAD];     // changed: Threads array
 };
 
 // Process memory is laid out contiguously, low addresses first:

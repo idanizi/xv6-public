@@ -1,3 +1,6 @@
+// changed: avoid circular dependency #task1
+#pragma once
+// changed #end
 // Mutual exclusion lock.
 struct spinlock {
   uint locked;       // Is the lock held?
