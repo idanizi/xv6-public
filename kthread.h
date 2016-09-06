@@ -35,29 +35,23 @@ struct thread {
 
 /*
  * TODO: moving to threads #task1.1
- * todo: 1. Add a pointer to current thread (of type struct thread) right after the pointer to proc struct
+ * DONE: 1. Add a pointer to current thread (of type struct thread) right after the pointer to proc struct
  * (see struct cpu at proc.h).
- * todo: 2. Update function seginit (see vm.c) so that the line 31:
+ * DONE: 2. Update function seginit (see vm.c) so that the line 31:
  * c->gdt[SEG_KCPU] = SEG(STA_W, &c->cpu, 8, 0);
  * will be replaced with following line:
  * c->gdt[SEG_KCPU] = SEG(STA_W, &c->cpu, 12, 0);
- * todo: 3. Add a global pointer to current thread by inserting following line to proc.h:
+ * DONE: 3. Add a global pointer to current thread by inserting following line to proc.h:
  * extern struct thread *thread asm("%gs:8");
  */
 // todo: additional changes may be required (e.g., the scheduler, for example, must update thread in addition to proc).
-// todo: Add a constant to kthread.h called NTHREAD = 16.
-// todo: each process should contain its own static array of threads.
-/*
- * todo: change scheduler in proc.c to support threads:
- * As you have seen in assignment 1, XV6 implements scheduling policy that goes over the list of processes
- * and chooses the next RUNNABLE process in the array. You are expected to change the scheduling so it
- * will run over all the available threads of a specific process before proceeding to the next process. This is
- * similar to the original scheduling policy, just over threads.
- */
+// DONE: Add a constant to kthread.h called NTHREAD = 16.
+// DONE: each process should contain its own static array of threads.
 
 /*
  * todo: synchronizing all shared fields of the thread owner when they are accessed
- * add lock to proc struct, initlock "proc" at allocproc.
+ * DONE: add lock to proc struct,
+ * todo: initlock "proc" at allocproc.
  */
 
 /*

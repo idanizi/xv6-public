@@ -254,6 +254,14 @@ wait(void)
   }
 }
 
+/*
+ * todo: change scheduler in proc.c to support threads:
+ * As you have seen in assignment 1, XV6 implements scheduling policy that goes over the list of processes
+ * and chooses the next RUNNABLE process in the array. You are expected to change the scheduling so it
+ * will run over all the available threads of a specific process before proceeding to the next process. This is
+ * similar to the original scheduling policy, just over threads.
+ */
+
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.

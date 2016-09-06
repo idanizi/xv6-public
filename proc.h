@@ -33,6 +33,7 @@ extern int ncpu;
 // in thread libraries such as Linux pthreads.
 extern struct cpu *cpu asm("%gs:0");       // &cpus[cpunum()]
 extern struct proc *proc asm("%gs:4");     // cpus[cpunum()].proc
+extern struct thread *thread asm("%gs:8"); // changed #task1.1
 
 //PAGEBREAK: 17
 // Saved registers for kernel context switches.
