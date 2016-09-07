@@ -12,6 +12,8 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
+struct spinlock threadLocks[NPROC]; // changed #task1.1
+
 static struct proc *initproc;
 
 int nextpid = 1;
@@ -24,6 +26,15 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
+    // changed: initlock for threads locks done here #task1.1
+    int i = 0;
+    for (i = 0; i < NPROC; i++) {
+        itoa(i, ptable.proc[i].name);
+        strcat(ptable.proc[i].name, "_tl"); // name for thread lock.
+        initlock(&threadLocks[i], ptable.proc[i].name);
+        cprintf("threadLocks[%d].name = %s\n", i, threadLocks[i].name); // todo delete
+    }
+    // changed #end
 }
 
 //PAGEBREAK: 32
@@ -36,18 +47,35 @@ allocproc(void)
 {
   struct proc *p;
   char *sp;
+    int pindex = 0; // changed #task1.1
 
   acquire(&ptable.lock);
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == UNUSED)
-      goto found;
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+        pindex++; // changed #task1.1
+        if (p->state == UNUSED) {
+            goto found;
+        }
+    }
   release(&ptable.lock);
   return 0;
 
 found:
-  p->state = EMBRYO;
-  p->pid = nextpid++;
-  release(&ptable.lock);
+p->state = EMBRYO;
+    p->pid = nextpid++;
+    // changed: threads table lock association (pointer) -> instead of initlock here. (moved to pinit()) #task1.1
+    // changed: give process a name. #task1.1
+    itoa(p->pid, p->name);
+    strcat(p->name, "_p");
+    cprintf("p->name = %s\n", p->name); // todo delete
+
+    // assign thread table lock pointer to its lock in the threadLocks array.
+    p->threadTable.lock = &threadLocks[pindex];
+
+    cprintf("p->threadTable.lock->name = %s\n", p->threadTable.lock->name); // todo del
+    cprintf("threadLocks[%d] = %s\n", pindex, threadLocks[pindex].name); // todo del
+    cprintf("ptable.lock.name: %s\n",ptable.lock.name); // todo del
+    // changed #end
+    release(&ptable.lock);
 
   // Allocate kernel stack.
   if((p->kstack = kalloc()) == 0){
@@ -108,8 +136,8 @@ int
 growproc(int n)
 {
   uint sz;
-  
-  sz = proc->sz;
+
+    sz = proc->sz;
   if(n > 0){
     if((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0)
       return -1;
@@ -155,15 +183,15 @@ fork(void)
   np->cwd = idup(proc->cwd);
 
   safestrcpy(np->name, proc->name, sizeof(proc->name));
- 
-  pid = np->pid;
+
+    pid = np->pid;
 
   // lock to force the compiler to emit the np->state write last.
   acquire(&ptable.lock);
   np->state = RUNNABLE;
   release(&ptable.lock);
-  
-  return pid;
+
+    return pid;
 }
 
 // Exit the current process.  Does not return.
@@ -344,14 +372,14 @@ forkret(void)
 
   if (first) {
     // Some initialization functions must be run in the context
-    // of a regular process (e.g., they call sleep), and thus cannot 
+      // of a regular process (e.g., they call sleep), and thus cannot
     // be run from main().
     first = 0;
     iinit(ROOTDEV);
     initlog(ROOTDEV);
   }
-  
-  // Return to "caller", actually trapret (see allocproc).
+
+    // Return to "caller", actually trapret (see allocproc).
 }
 
 // Atomically release lock and sleep on chan.
@@ -455,8 +483,8 @@ procdump(void)
   struct proc *p;
   char *state;
   uint pc[10];
-  
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
     if(p->state == UNUSED)
       continue;
     if(p->state >= 0 && p->state < NELEM(states) && states[p->state])

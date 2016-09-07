@@ -139,6 +139,11 @@ char*           safestrcpy(char*, const char*, int);
 int             strlen(const char*);
 int             strncmp(const char*, const char*, uint);
 char*           strncpy(char*, const char*, int);
+void            itoa(int n, char s[]); // changed #task1.1
+void            reverse(char s[]); // changed #task1.1
+char*           strcat(char *dest, const char *src); // changed #task1.1
+
+
 
 // syscall.c
 int             argint(int, int*);

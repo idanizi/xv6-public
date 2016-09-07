@@ -51,7 +51,6 @@ struct thread {
 /*
  * todo: synchronizing all shared fields of the thread owner when they are accessed
  * DONE: add lock to proc struct,
- * todo: initlock "proc" at allocproc.
  */
 
 /*

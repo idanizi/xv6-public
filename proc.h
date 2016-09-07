@@ -71,8 +71,10 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  struct spinlock lock;        // changed: Process lock for threads sync
-  struct thread threads[NTHREAD];     // changed: Threads array
+  struct {
+      struct spinlock *lock;        // changed: Process lock pointer for threads sync #task1.1
+      struct thread threads[NTHREAD];     // changed: Threads array
+  }threadTable;
 };
 
 // Process memory is laid out contiguously, low addresses first:
