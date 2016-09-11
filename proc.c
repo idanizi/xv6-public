@@ -17,6 +17,7 @@ struct spinlock threadLocks[NPROC]; // changed #task1.1
 static struct proc *initproc;
 
 int nextpid = 1;
+int nexttid = 1; // changed #task1.1
 extern void forkret(void);
 extern void trapret(void);
 
@@ -70,6 +71,14 @@ p->state = EMBRYO;
 
     // assign thread table lock pointer to its lock in the threadLocks array.
     p->threadTable.lock = &threadLocks[pindex];
+
+    // todo: loop for init all 16 threads in the process:
+    /*
+     * 1. first thread runnable
+     * 2. all the rest are unused
+     * 3. tid for each thread
+     * 4. go for each field and initiate it.
+     */
 
     cprintf("p->threadTable.lock->name = %s\n", p->threadTable.lock->name); // todo del
     cprintf("threadLocks[%d] = %s\n", pindex, threadLocks[pindex].name); // todo del
@@ -323,7 +332,7 @@ scheduler(void)
       switchkvm();
 
       // Process is done running for now.
-      // It should have changed its p->state before coming back.
+      // It should change its p->state before coming back.
       proc = 0;
     }
     release(&ptable.lock);
@@ -332,7 +341,7 @@ scheduler(void)
 }
 
 // Enter scheduler.  Must hold only ptable.lock
-// and have changed proc->state.
+// and change proc->state.
 void
 sched(void)
 {
