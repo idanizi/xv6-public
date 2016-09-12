@@ -176,9 +176,9 @@ switchuvm(struct thread *t) // changed: function argument's type #task1.1
   cpu->ts.ss0 = SEG_KDATA << 3;
   cpu->ts.esp0 = (uint)thread->kstack + KSTACKSIZE; // changed #task1.1
   ltr(SEG_TSS << 3);
-  if(t->pgdir == 0) // changed #task1.1
+  if(t->parent->pgdir == 0) // changed #task1.1
     panic("switchuvm: no pgdir");
-  lcr3(v2p(t->pgdir));  // switch to new address space // changed #task1.1
+  lcr3(v2p(t->parent->pgdir));  // switch to new address space // changed #task1.1
   popcli();
 }
 

@@ -112,9 +112,9 @@ exec(char *path, char **argv)
   }
 
   //only the thread preforming exec doing this piece of code
-  oldpgdir = thread->pgdir;
-  thread->pgdir = pgdir;
-  thread->sz = sz;
+  oldpgdir = thread->parent->pgdir;
+  thread->parent->pgdir = pgdir;
+  thread->parent->sz = sz;
   thread->tf->eip = elf.entry;  // main
   thread->tf->esp = sp;
   switchuvm(thread);

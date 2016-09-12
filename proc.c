@@ -102,52 +102,34 @@ allocproc(void) {
      * t->parent; // is needed?
      * t->tf;
      */
-
-    struct thread *t;
-    for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
-        if (t == p->threadTable.threads) {
-            // is first thread
-            t->state = T_EMBRYO;
-        } else {
-            t->state = T_UNUSED;
-        }
-
-        ////////// init thread fields /////////
-
-        // tid
-        t->tid = nexttid++;
-
-        // name
-        itoa(t->tid, t->name);
-        strcat(t->name, "_t");
-        cprintf("t->name = %s\n", t->name); // todo delete
-
-        // Allocate kernel stack.
-        if ((t->kstack = kalloc()) == 0) {
-            // case of failure
-            t->state = T_UNUSED;
-            p->state = UNUSED;
-            return 0;
-        }
-        sp = p->kstack + KSTACKSIZE;
-
-        // Leave room for trap frame.
-        sp -= sizeof *t->tf;
-        t->tf = (struct trapframe *) sp;
-
-        // Set up new context to start executing at forkret,
-        // which returns to trapret.
-        sp -= 4;
-        *(uint *) sp = (uint) trapret;
-
-        sp -= sizeof *t->context;
-        t->context = (struct context *) sp;
-        memset(t->context, 0, sizeof *t->context);
-        t->context->eip = (uint) forkret; // todo: need to check 'void forkret()' support for threads? #task1.1
-    }
-
     // end of critical section process
     release(&ptable.lock); // changed location #task1.1
+
+    struct thread *t = p->threadTable.threads; // first thread;
+
+    // NOTE: parent of thread its his process
+    t->parent = p;
+
+    // Allocate kernel stack.
+    if ((t->kstack = kalloc()) == 0) {
+        t->state = UNUSED;
+        return 0;
+    }
+    sp = t->kstack + KSTACKSIZE;
+
+    // Leave room for trap frame.
+    sp -= sizeof *t->tf;
+    t->tf = (struct trapframe *) sp;
+
+    // Set up new context to start executing at forkret,
+    // which returns to trapret.
+    sp -= 4;
+    *(uint *) sp = (uint) trapret;
+
+    sp -= sizeof *t->context;
+    t->context = (struct context *) sp;
+    memset(t->context, 0, sizeof *t->context);
+    t->context->eip = (uint) forkret;
 
     // changed: this code has been canceled to be moved to the loop of initiating threads in the new process #task1.1
 //  // Allocate kernel stack.
@@ -187,26 +169,20 @@ userinit(void) {
     p = allocproc();
     initproc = p;
     // changed #task1.1
-    // critical section for threads
-//    acquire(p->threadTable.lock); // fixme deadlock
-    struct thread *t;
-    for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
-        if ((t->pgdir = setupkvm()) == 0) {
-            panic("userinit: out of memory?");
-        }
-        inituvm(t->pgdir, _binary_initcode_start, (int) _binary_initcode_size);
-        t->sz = PGSIZE;
-        memset(t->tf, 0, sizeof(*t->tf));
-        t->tf->cs = (SEG_UCODE << 3) | DPL_USER;
-        t->tf->ds = (SEG_UDATA << 3) | DPL_USER;
-        t->tf->es = t->tf->ds;
-        t->tf->ss = t->tf->ds;
-        t->tf->eflags = FL_IF;
-        t->tf->esp = PGSIZE;
-        t->tf->eip = 0;  // beginning of initcode.S
-    }
-//    release(p->threadTable.lock); // fixme deadlock
-    // end of critical section
+    struct thread *t = p->threadTable.threads; // first thread
+    // changed #end
+    if ((p->pgdir = setupkvm()) == 0)
+        panic("userinit: out of memory?");
+    inituvm(p->pgdir, _binary_initcode_start, (int) _binary_initcode_size);
+    p->sz = PGSIZE;
+    memset(t->tf, 0, sizeof(*t->tf));
+    t->tf->cs = (SEG_UCODE << 3) | DPL_USER;
+    t->tf->ds = (SEG_UDATA << 3) | DPL_USER;
+    t->tf->es = t->tf->ds;
+    t->tf->ss = t->tf->ds;
+    t->tf->eflags = FL_IF;
+    t->tf->esp = PGSIZE;
+    t->tf->eip = 0;  // beginning of initcode.S
 
     // changed: removed to support threads #task1.1
 //  if((p->pgdir = setupkvm()) == 0)
@@ -227,7 +203,7 @@ userinit(void) {
     safestrcpy(p->name, "initcode", sizeof(p->name));
     p->cwd = namei("/");
 
-    p->threadTable.threads[0].state = T_RUNNABLE; // changed: first thread runnable #task1.1
+    t->state = T_RUNNABLE; // changed: first thread runnable #task1.1
     p->state = RUNNABLE;
 }
 
@@ -238,16 +214,17 @@ growproc(int n) {
     cprintf("in growproc(int n)\n"); // todo del
     uint sz;
 
-    // changed #task1.1
-    sz = thread->sz;
+    sz = proc->sz;
     if (n > 0) {
-        if ((sz = allocuvm(thread->pgdir, sz, sz + n)) == 0)
+        if ((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0)
             return -1;
     } else if (n < 0) {
-        if ((sz = deallocuvm(thread->pgdir, sz, sz + n)) == 0)
+        if ((sz = deallocuvm(proc->pgdir, sz, sz + n)) == 0)
             return -1;
     }
-    thread->sz = sz;
+    proc->sz = sz;
+
+    // changed #task1.1
     switchuvm(thread);
     // changed #end
     return 0;
@@ -275,22 +252,22 @@ fork(void) {
 
     // changed: supporting threads #task1.1
     // first thread of the new process is the new embryo thread
-    nt = &np->threadTable.threads[0];
+    nt = np->threadTable.threads;
     // Copy process state from p.
-    if ((nt->pgdir = copyuvm(thread->pgdir, thread->sz)) == 0) {
+    if ((np->pgdir = copyuvm(np->pgdir, proc->sz)) == 0) {
         // case of failure
         kfree(nt->kstack);
         nt->kstack = 0;
         nt->state = T_UNUSED;
+        np->state = UNUSED;
         return -1;
     }
-    nt->sz = thread->sz;
+    np->sz = proc->sz;
     // changed #end
 
     np->parent = proc;
 
     // changed #task1.1
-    nt->parent = thread; // todo: is needed? #task1.1
     *nt->tf = *thread->tf;
 
     // Clear %eax so that fork returns 0 in the child.
@@ -416,7 +393,7 @@ wait(void) {
                 for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
                     kfree(t->kstack);
                     t->kstack = 0;
-                    freevm(t->pgdir);
+                    freevm(t->parent->pgdir);
                     t->state = T_UNUSED;
                     t->tid = 0;
                     t->parent = 0; // todo: is needed? #task1.1

@@ -15,7 +15,7 @@ struct thread {
     char *kstack;                // Bottom of kernel stack for this thread
     enum threadstate state;      // Thread state
     int tid;                     // Thread ID
-    struct thread *parent;       // Parent thread // TODO: is needed for threads?
+    struct proc *parent;       // Parent thread // TODO: is needed for threads?
     struct trapframe *tf;        // Trap frame for current syscall
     struct context *context;     // swtch() here to run thread
     void *chan;                  // If non-zero, sleeping on chan
