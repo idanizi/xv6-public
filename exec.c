@@ -14,6 +14,7 @@
 int
 exec(char *path, char **argv)
 {
+  cprintf(">> in exec <<\n"); // todo del
   char *s, *last;
   int i, off;
   uint argc, sz, sp, ustack[3+MAXARG+1];
@@ -99,7 +100,7 @@ exec(char *path, char **argv)
    * destroy themselves and only then complete the exec task.
    */
   struct thread *t;
-  acquire(proc->threadTable.lock); // todo watch for deadlocks here
+//  acquire(proc->threadTable.lock); // fixme deadlocks
   for (t = proc->threadTable.threads; t < &proc->threadTable.threads[NTHREAD]; t++) {
     if (t->tid != thread->tid) {
       t->killed = 1;
@@ -118,7 +119,7 @@ exec(char *path, char **argv)
   thread->tf->esp = sp;
   switchuvm(thread);
   freevm(oldpgdir);
-  release(proc->threadTable.lock);
+//  release(proc->threadTable.lock); // fixme deadlocks
   // end of critical section
   // changed #end
   return 0;

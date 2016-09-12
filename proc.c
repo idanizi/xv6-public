@@ -47,6 +47,14 @@ pinit(void) {
 static struct proc *
 allocproc(void) {
     cprintf("in allocproc(void)\n"); // todo del
+    if (proc || thread) { // todo del
+        if (proc)
+            cprintf("proc->pid: %d ", proc->pid);
+        if (thread)
+            cprintf("thread->tid: %d", thread->tid);
+        cprintf("\n");
+    }
+
     struct proc *p;
     char *sp;
     int pindex = 0; // changed #task1.1
@@ -64,6 +72,7 @@ allocproc(void) {
     found:
     p->state = EMBRYO;
     p->pid = nextpid++;
+
     // changed: threads table lock association (pointer) -> instead of initlock here. (moved to pinit()) #task1.1
     // changed: give process a name. #task1.1
     itoa(p->pid, p->name);
@@ -72,15 +81,10 @@ allocproc(void) {
 
     // assign thread table lock pointer to its lock in the threadLocks array.
     p->threadTable.lock = &threadLocks[pindex];
-
-
     cprintf("p->threadTable.lock->name = %s\n", p->threadTable.lock->name); // todo del
     cprintf("threadLocks[%d].name = %s\n", pindex, threadLocks[pindex].name); // todo del
     cprintf("ptable.lock.name: %s\n", ptable.lock.name); // todo del
     // changed #end
-
-    // end of critical section process
-    release(&ptable.lock);
 
     // changed: #task1.1
     // DONE: loop for init all 16 threads in the process:
@@ -95,9 +99,7 @@ allocproc(void) {
      * t->chan;
      * t->context;
      * t->killed;
-     * t->kstack;
-     * t->parent;
-     * t->sz;
+     * t->parent; // is needed?
      * t->tf;
      */
 
@@ -124,9 +126,10 @@ allocproc(void) {
         if ((t->kstack = kalloc()) == 0) {
             // case of failure
             t->state = T_UNUSED;
+            p->state = UNUSED;
             return 0;
         }
-        sp = t->kstack + KSTACKSIZE;
+        sp = p->kstack + KSTACKSIZE;
 
         // Leave room for trap frame.
         sp -= sizeof *t->tf;
@@ -142,6 +145,9 @@ allocproc(void) {
         memset(t->context, 0, sizeof *t->context);
         t->context->eip = (uint) forkret; // todo: need to check 'void forkret()' support for threads? #task1.1
     }
+
+    // end of critical section process
+    release(&ptable.lock); // changed location #task1.1
 
     // changed: this code has been canceled to be moved to the loop of initiating threads in the new process #task1.1
 //  // Allocate kernel stack.
@@ -182,7 +188,7 @@ userinit(void) {
     initproc = p;
     // changed #task1.1
     // critical section for threads
-//  acquire(p->threadTable.lock); // todo: watch for deadlocks here
+//    acquire(p->threadTable.lock); // fixme deadlock
     struct thread *t;
     for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
         if ((t->pgdir = setupkvm()) == 0) {
@@ -199,7 +205,7 @@ userinit(void) {
         t->tf->esp = PGSIZE;
         t->tf->eip = 0;  // beginning of initcode.S
     }
-//  release(p->threadTable.lock);
+//    release(p->threadTable.lock); // fixme deadlock
     // end of critical section
 
     // changed: removed to support threads #task1.1
@@ -321,8 +327,16 @@ fork(void) {
 void
 exit(void) {
     cprintf("in exit(void)\n"); // todo del
+    if (proc || thread) { // todo del
+        if (proc)
+            cprintf("proc->pid: %d ", proc->pid);
+        if (thread)
+            cprintf("thread->tid: %d", thread->tid);
+        cprintf("\n");
+    }
+
     struct proc *p;
-    struct thread *t; // changed #task1.1
+//    struct thread *t; // changed #task1.1
     int fd;
 
     // todo: do the same for threads - initthread?
@@ -360,12 +374,13 @@ exit(void) {
     // Jump into the scheduler, never to return.
     proc->state = ZOMBIE;
     // changed #task1.1
+    thread->state = T_UNUSED;
     // critical section for threads
-    acquire(proc->threadTable.lock); // todo: watch for deadlocks here
-    for (t = proc->threadTable.threads; t < &proc->threadTable.threads[NTHREAD]; t++) {
-        t->state = T_ZOMBIE;
-    }
-    release(proc->threadTable.lock);
+//    acquire(proc->threadTable.lock); // fixme deadlocks
+//    for (t = proc->threadTable.threads; t < &proc->threadTable.threads[NTHREAD]; t++) {
+//        t->state = T_UNUSED;
+//    }
+//    release(proc->threadTable.lock); // fixme deadlocks
     // end critical section
     // changed #end
     sched();
@@ -397,7 +412,7 @@ wait(void) {
 //        p->kstack = 0;
 //        freevm(p->pgdir);
                 // CS for threads
-                acquire(p->threadTable.lock); // todo watch for deadlocks here #task1.1
+//                acquire(p->threadTable.lock); // fixme deadlock
                 for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
                     kfree(t->kstack);
                     t->kstack = 0;
@@ -408,7 +423,7 @@ wait(void) {
                     t->name[0] = 0;
                     t->killed = 0;
                 }
-                release(p->threadTable.lock);
+//                release(p->threadTable.lock);  // fixme deadlocks
                 // end of CS
                 // changed #end
 
@@ -471,17 +486,18 @@ scheduler(void) {
 
             // changed #task1.1
             // CS for threads
-            acquire(p->threadTable.lock);
+//            acquire(p->threadTable.lock); // fixme deadlock
             for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
                 if (t->state != T_RUNNABLE)
                     continue;
+                break;
             }
             if (t >= &p->threadTable.threads[NTHREAD]) {
                 // no runnable threads available in this process, so jump to next process
-                release(p->threadTable.lock);
+//                release(p->threadTable.lock); // fixme deadlocks
                 continue;
             }
-//      release(p->threadTable.lock); // todo move location?
+//      release(p->threadTable.lock); // todo move location?   // fixme deadlocks
             // changed #end
 
             proc = p;
@@ -517,9 +533,9 @@ sched(void) {
     if (!holding(&ptable.lock))
         panic("sched ptable.lock");
     //changed #task1.1
-    if (!holding(proc->threadTable.lock)) {
-        panic("sched proc.threadTable.lock");
-    }
+//    if (!holding(proc->threadTable.lock)) { // fixme deadlocks
+//        panic("sched proc.threadTable.lock");
+//    }
     //changed #end
     if (cpu->ncli != 1)
         panic("sched locks");
@@ -544,13 +560,13 @@ yield(void) {
     acquire(&ptable.lock);  //DOC: yieldlock
 
     //changed #task1.1
-    acquire(proc->threadTable.lock);
+//    acquire(proc->threadTable.lock); // fixme deadlocks
     thread->state = T_RUNNABLE;
     // changed #end
 
     proc->state = RUNNABLE;
     sched();
-    release(proc->threadTable.lock); // changed #task1.1
+//    release(proc->threadTable.lock); // changed #task1.1 // fixme deadlocks
     release(&ptable.lock);
 }
 
@@ -558,10 +574,10 @@ yield(void) {
 // will swtch here.  "Return" to user space.
 void
 forkret(void) {
-    cprintf("forkret(void)\n"); // todo del
+    cprintf("in forkret(void)\n"); // todo del
     static int first = 1;
     // changed: Still holding proc->threadTable.lock from scheduler. #task1.1
-    release(proc->threadTable.lock);
+//    release(proc->threadTable.lock);  // fixme deadlocks
     // changed #end
     // Still holding ptable.lock from scheduler.
     release(&ptable.lock);
@@ -603,7 +619,7 @@ sleep(void *chan, struct spinlock *lk) {
     // so it's okay to release lk.
     if (lk != &ptable.lock) {  //DOC: sleeplock0
         acquire(&ptable.lock);  //DOC: sleeplock1
-        acquire(proc->threadTable.lock); // changed #task1.1 // fixme deadlock
+//        acquire(proc->threadTable.lock); // changed #task1.1 // fixme deadlock
         release(lk);
     }
 
@@ -622,7 +638,7 @@ sleep(void *chan, struct spinlock *lk) {
 
     // Reacquire original lock.
     if (lk != &ptable.lock) {  //DOC: sleeplock2
-        release(proc->threadTable.lock); // changed #task1.1 // fixme deadlock
+//        release(proc->threadTable.lock); // changed #task1.1 // fixme deadlock
         release(&ptable.lock);
         acquire(lk);
     }
@@ -633,7 +649,8 @@ sleep(void *chan, struct spinlock *lk) {
 // The ptable lock must be held.
 static void
 wakeup1(void *chan) {
-    cprintf("in wakeup1(void *chan)\n"); // todo del
+    if (chan != &ticks)
+        cprintf("in wakeup1(void *chan)\n"); // todo del
     struct proc *p;
     // changed #task1.1
     struct thread *t;
@@ -654,11 +671,14 @@ wakeup1(void *chan) {
 // Wake up all processes sleeping on chan.
 void
 wakeup(void *chan) {
-    cprintf("in wakeup(void *chan)\n");// todo del
+    if (chan != &ticks)
+        cprintf("in wakeup(void *chan)\n");// todo del
     acquire(&ptable.lock);
-    acquire(proc->threadTable.lock); // fixme deadlock
+//    if (proc)
+//        acquire(proc->threadTable.lock); // fixme deadlock
     wakeup1(chan);
-    release(proc->threadTable.lock); // fixme deadlock
+//    if (proc)
+//        release(proc->threadTable.lock); // fixme deadlock
     release(&ptable.lock);
 }
 
@@ -676,23 +696,23 @@ kill(int pid) {
         if (p->pid == pid) {
             p->killed = 1;
             // changed #task1.1
-            acquire(p->threadTable.lock);// fixme deadlock?
+//            acquire(p->threadTable.lock);// fixme deadlock?
             for(t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++){
                 t->killed = 1;
             }
-            release(p->threadTable.lock);// fixme deadlock?
+//            release(p->threadTable.lock);// fixme deadlock?
             //changed #end
             // Wake process from sleep if necessary.
             if (p->state == SLEEPING) {
                 p->state = RUNNABLE;
                 // changed #task1.1
-                acquire(p->threadTable.lock);// fixme deadlock?
+//                acquire(p->threadTable.lock);// fixme deadlock?
                 for(t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++){
                     if(t->state == T_SLEEPING){
                         t->state = T_RUNNABLE;
                     }
                 }
-                release(p->threadTable.lock);// fixme deadlock?
+//                release(p->threadTable.lock);// fixme deadlock?
                 // changed #end
             }
             release(&ptable.lock);
@@ -734,13 +754,13 @@ procdump(void) {
         cprintf("%d %s %s", p->pid, state, p->name);
         if (p->state == SLEEPING) {
             // changed #task1.1
-            acquire(p->threadTable.lock);// fixme deadlock?
+//            acquire(p->threadTable.lock);// fixme deadlock?
             for(t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++){
                 getcallerpcs((uint *) t->context->ebp + 2, pc);
                 for (i = 0; i < 10 && pc[i] != 0; i++)
                     cprintf(" %p", pc[i]);
             }
-            release(p->threadTable.lock);// fixme deadlock?
+//            release(p->threadTable.lock);// fixme deadlock?
 //            getcallerpcs((uint *) p->context->ebp + 2, pc);
 //            for (i = 0; i < 10 && pc[i] != 0; i++)
 //                cprintf(" %p", pc[i]);

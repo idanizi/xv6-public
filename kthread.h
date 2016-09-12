@@ -10,8 +10,8 @@ enum threadstate {
 };
 
 struct thread {
-    uint sz;                     // Size of thread memory (bytes)
-    pde_t* pgdir;                // Page table - todo: is needed for threads?
+//    uint sz;                     // Size of thread memory (bytes)
+//    pde_t* pgdir;                // Page table - todo: is needed for threads?
     char *kstack;                // Bottom of kernel stack for this thread
     enum threadstate state;      // Thread state
     int tid;                     // Thread ID
