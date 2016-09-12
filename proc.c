@@ -26,6 +26,7 @@ static void wakeup1(void *chan);
 
 void
 pinit(void) {
+    cprintf("in pinit(void)\n"); // todo del
     initlock(&ptable.lock, "ptable");
     // changed: initlock for threads locks done here #task1.1
     int i = 0;
@@ -33,7 +34,7 @@ pinit(void) {
         itoa(i, ptable.proc[i].name);
         strcat(ptable.proc[i].name, "_tl"); // name for thread lock.
         initlock(&threadLocks[i], ptable.proc[i].name);
-        cprintf("threadLocks[%d].name = %s\n", i, threadLocks[i].name); // todo delete
+//        cprintf("threadLocks[%d].name = %s\n", i, threadLocks[i].name); // todo delete
     }
     // changed #end
 }
@@ -45,6 +46,7 @@ pinit(void) {
 // Otherwise return 0.
 static struct proc *
 allocproc(void) {
+    cprintf("in allocproc(void)\n"); // todo del
     struct proc *p;
     char *sp;
     int pindex = 0; // changed #task1.1
@@ -81,7 +83,7 @@ allocproc(void) {
     release(&ptable.lock);
 
     // changed: #task1.1
-    // TODO: loop for init all 16 threads in the process:
+    // DONE: loop for init all 16 threads in the process:
     /*
      * 1. first thread EMBRYO / runnable
      * DONE: 2. all the rest are unused
@@ -172,6 +174,7 @@ allocproc(void) {
 // Set up first user process.
 void
 userinit(void) {
+    cprintf("in userinit(void)\n"); // todo del
     struct proc *p;
     extern char _binary_initcode_start[], _binary_initcode_size[];
 
@@ -226,6 +229,7 @@ userinit(void) {
 // Return 0 on success, -1 on failure.
 int
 growproc(int n) {
+    cprintf("in growproc(int n)\n"); // todo del
     uint sz;
 
     // changed #task1.1
@@ -253,6 +257,7 @@ growproc(int n) {
 // Caller must set state of returned proc to RUNNABLE.
 int
 fork(void) {
+    cprintf("in fork(void)\n"); // todo del
     int i, pid;
 //  int tid; // changed #tsak1.1
     struct proc *np;
@@ -315,6 +320,7 @@ fork(void) {
 // until its parent calls wait() to find out it exited.
 void
 exit(void) {
+    cprintf("in exit(void)\n"); // todo del
     struct proc *p;
     struct thread *t; // changed #task1.1
     int fd;
@@ -370,6 +376,7 @@ exit(void) {
 // Return -1 if this process has no children.
 int
 wait(void) {
+    cprintf("in wait(void)\n"); // todo del
     struct proc *p;
     struct thread *t; // changed #task1.1
     int havekids, pid;
@@ -444,6 +451,7 @@ wait(void) {
 //      via swtch back to the scheduler.
 void
 scheduler(void) {
+    cprintf("in scheduler(void)\n"); // todo del
     struct proc *p;
     struct thread *t; // changed #task1.1
 
@@ -503,6 +511,7 @@ scheduler(void) {
 // and change proc->state.
 void
 sched(void) {
+    cprintf("in sched(void)\n"); // todo del
     int intena;
 
     if (!holding(&ptable.lock))
@@ -531,6 +540,7 @@ sched(void) {
 // Give up the CPU for one scheduling round.
 void
 yield(void) {
+    cprintf("in yield(void)\n"); // todo del
     acquire(&ptable.lock);  //DOC: yieldlock
 
     //changed #task1.1
@@ -548,6 +558,7 @@ yield(void) {
 // will swtch here.  "Return" to user space.
 void
 forkret(void) {
+    cprintf("forkret(void)\n"); // todo del
     static int first = 1;
     // changed: Still holding proc->threadTable.lock from scheduler. #task1.1
     release(proc->threadTable.lock);
@@ -571,6 +582,7 @@ forkret(void) {
 // Reacquires lock when awakened.
 void
 sleep(void *chan, struct spinlock *lk) {
+    cprintf("in sleep(void *chan, struct spinlock *lk)\n"); // todo del
     if (proc == 0)
         panic("sleep");
 
@@ -621,6 +633,7 @@ sleep(void *chan, struct spinlock *lk) {
 // The ptable lock must be held.
 static void
 wakeup1(void *chan) {
+    cprintf("in wakeup1(void *chan)\n"); // todo del
     struct proc *p;
     // changed #task1.1
     struct thread *t;
@@ -641,6 +654,7 @@ wakeup1(void *chan) {
 // Wake up all processes sleeping on chan.
 void
 wakeup(void *chan) {
+    cprintf("in wakeup(void *chan)\n");// todo del
     acquire(&ptable.lock);
     acquire(proc->threadTable.lock); // fixme deadlock
     wakeup1(chan);
@@ -653,6 +667,7 @@ wakeup(void *chan) {
 // to user space (see trap in trap.c).
 int
 kill(int pid) {
+    cprintf("in kill(int pid)\n"); // todo del
     struct proc *p;
     struct thread *t; // changed #task1.1
 
@@ -694,6 +709,7 @@ kill(int pid) {
 // No lock to avoid wedging a stuck machine further.
 void
 procdump(void) {
+    cprintf("in procdump(void)\n"); // todo del
     static char *states[] = {
             [UNUSED]    "unused",
             [EMBRYO]    "embryo",
