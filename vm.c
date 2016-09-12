@@ -6,6 +6,9 @@
 #include "mmu.h"
 #include "proc.h"
 #include "elf.h"
+// changed #task1.1
+#include "kthread.h"
+// changed #end
 
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
@@ -161,19 +164,21 @@ switchkvm(void)
   lcr3(v2p(kpgdir));   // switch to the kernel page table
 }
 
-// Switch TSS and h/w page table to correspond to process p.
+// TODO: support threads #task1.1
+// Switch TSS and h/w page table to correspond to process p. // changed cancelled #task1.1
+// Switch TSS and h/w page table to correspond to thread t. // changed #task1.1
 void
-switchuvm(struct proc *p)
+switchuvm(struct thread *t) // changed: function argument's type #task1.1
 {
   pushcli();
   cpu->gdt[SEG_TSS] = SEG16(STS_T32A, &cpu->ts, sizeof(cpu->ts)-1, 0);
   cpu->gdt[SEG_TSS].s = 0;
   cpu->ts.ss0 = SEG_KDATA << 3;
-  cpu->ts.esp0 = (uint)proc->kstack + KSTACKSIZE;
+  cpu->ts.esp0 = (uint)thread->kstack + KSTACKSIZE; // changed #task1.1
   ltr(SEG_TSS << 3);
-  if(p->pgdir == 0)
+  if(t->pgdir == 0) // changed #task1.1
     panic("switchuvm: no pgdir");
-  lcr3(v2p(p->pgdir));  // switch to new address space
+  lcr3(v2p(t->pgdir));  // switch to new address space // changed #task1.1
   popcli();
 }
 

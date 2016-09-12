@@ -11,11 +11,11 @@ enum threadstate {
 
 struct thread {
     uint sz;                     // Size of thread memory (bytes)
-//    pde_t* pgdir;                // Page table - note: not used for thread -> they have shared resources
+    pde_t* pgdir;                // Page table - todo: is needed for threads?
     char *kstack;                // Bottom of kernel stack for this thread
     enum threadstate state;      // Thread state
     int tid;                     // Thread ID
-    struct thread *parent;       // Parent thread // TODO: is needed?
+    struct thread *parent;       // Parent thread // TODO: is needed for threads?
     struct trapframe *tf;        // Trap frame for current syscall
     struct context *context;     // swtch() here to run thread
     void *chan;                  // If non-zero, sleeping on chan
@@ -55,23 +55,16 @@ struct thread {
 
 /*
  * todo: EXPECTED BEHAVIOR:
- * todo: 1. Fork – should duplicate only the calling thread,
- * if other threads exist in the process they will not
- * exist in the new process
- * todo: 2. Exec – should start running on a single thread of the new process.
- * Note that in a multi-threaded environment a thread might be running while another thread of the same process is attempting to perform exec.
- * The thread performing exec should “tell” other threads of the same process to
- * destroy themselves and only then complete the exec task.
- * todo: Hint: You can review the code that is performed when the proc->killed field is set and write your implementation similarly.
- * todo: 3. Exit – should kill the process and all of its threads,
- * remember while a single threads executing exit, others threads of the same process might still be running.
+
+
+
  */
 
 // todo: thread system calls #task1.2
 // todo: implement int kthread_create( void*(*start_func)(), void* stack, int stack_size);
 /*
  * look in allocproc and copy the code & idea
- * todo: malloc for *stack ant the user space program, pass the pointer by sysprpc.c to the system call in the kernel
+ * todo: malloc for *stack at the user space program, pass the pointer by sysprpc.c to the system call in the kernel
  * You will need to create the stack in user mode and send its pointer to the system call in order to be
  * consistent with current memory allocator of xv6.
  *

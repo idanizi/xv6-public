@@ -6,7 +6,13 @@
 #include "defs.h"
 #include "x86.h"
 #include "elf.h"
-
+/*
+ * todo: 2. Exec – should start running on a single thread of the new process.
+ * Note that in a multi-threaded environment a thread might be running while another thread of the same process is attempting to perform exec.
+ * The thread performing exec should “tell” other threads of the same process to
+ * destroy themselves and only then complete the exec task.
+ * todo: Hint: You can review the code that is performed when the proc->killed field is set and write your implementation similarly.
+ */
 int
 exec(char *path, char **argv)
 {

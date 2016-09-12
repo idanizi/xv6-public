@@ -62,50 +62,109 @@ allocproc(void)
 
 found:
 p->state = EMBRYO;
-    p->pid = nextpid++;
-    // changed: threads table lock association (pointer) -> instead of initlock here. (moved to pinit()) #task1.1
-    // changed: give process a name. #task1.1
-    itoa(p->pid, p->name);
-    strcat(p->name, "_p");
-    cprintf("p->name = %s\n", p->name); // todo delete
+  p->pid = nextpid++;
+  // changed: threads table lock association (pointer) -> instead of initlock here. (moved to pinit()) #task1.1
+  // changed: give process a name. #task1.1
+  itoa(p->pid, p->name);
+  strcat(p->name, "_p");
+  cprintf("p->name = %s\n", p->name); // todo delete
 
-    // assign thread table lock pointer to its lock in the threadLocks array.
-    p->threadTable.lock = &threadLocks[pindex];
+  // assign thread table lock pointer to its lock in the threadLocks array.
+  p->threadTable.lock = &threadLocks[pindex];
 
-    // todo: loop for init all 16 threads in the process:
-    /*
-     * 1. first thread runnable
-     * 2. all the rest are unused
-     * 3. tid for each thread
-     * 4. go for each field and initiate it.
-     */
 
-    cprintf("p->threadTable.lock->name = %s\n", p->threadTable.lock->name); // todo del
-    cprintf("threadLocks[%d] = %s\n", pindex, threadLocks[pindex].name); // todo del
-    cprintf("ptable.lock.name: %s\n",ptable.lock.name); // todo del
-    // changed #end
-    release(&ptable.lock);
+  cprintf("p->threadTable.lock->name = %s\n", p->threadTable.lock->name); // todo del
+  cprintf("threadLocks[%d].name = %s\n", pindex, threadLocks[pindex].name); // todo del
+  cprintf("ptable.lock.name: %s\n", ptable.lock.name); // todo del
+  // changed #end
 
-  // Allocate kernel stack.
-  if((p->kstack = kalloc()) == 0){
-    p->state = UNUSED;
-    return 0;
+  // end of critical section process
+  release(&ptable.lock);
+
+  // changed: #task1.1
+  // TODO: loop for init all 16 threads in the process:
+  /*
+   * 1. first thread EMBRYO / runnable
+   * DONE: 2. all the rest are unused
+   * 3. tid for each thread
+   * 4. go for each field and initiate it:
+   * DONE: t->name;
+   * t->state;
+   * t->tid;
+   * t->chan;
+   * t->context;
+   * t->killed;
+   * t->kstack;
+   * t->parent;
+   * t->sz;
+   * t->tf;
+   */
+
+  struct thread *t;
+  for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
+    if (t == p->threadTable.threads) {
+      // is first thread
+      t->state = T_EMBRYO;
+    } else {
+      t->state = T_UNUSED;
+    }
+
+    ////////// init thread fields /////////
+
+    // tid
+    t->tid = nexttid++;
+
+    // name
+    itoa(t->tid, t->name);
+    strcat(t->name, "_t");
+    cprintf("t->name = %s\n", t->name); // todo delete
+
+    // Allocate kernel stack.
+    if ((t->kstack = kalloc()) == 0) {
+      // case of failure
+      t->state = T_UNUSED;
+      return 0;
+    }
+    sp = t->kstack + KSTACKSIZE;
+
+    // Leave room for trap frame.
+    sp -= sizeof *t->tf;
+    t->tf = (struct trapframe *) sp;
+
+    // Set up new context to start executing at forkret,
+    // which returns to trapret.
+    sp -= 4;
+    *(uint *) sp = (uint) trapret;
+
+    sp -= sizeof *t->context;
+    t->context = (struct context *) sp;
+    memset(t->context, 0, sizeof *t->context);
+    t->context->eip = (uint) forkret; // todo: need to check 'void forkret()' support for threads? #task1.1
   }
-  sp = p->kstack + KSTACKSIZE;
-  
-  // Leave room for trap frame.
-  sp -= sizeof *p->tf;
-  p->tf = (struct trapframe*)sp;
-  
-  // Set up new context to start executing at forkret,
-  // which returns to trapret.
-  sp -= 4;
-  *(uint*)sp = (uint)trapret;
 
-  sp -= sizeof *p->context;
-  p->context = (struct context*)sp;
-  memset(p->context, 0, sizeof *p->context);
-  p->context->eip = (uint)forkret;
+  // changed: this code has been canceled to be moved to the loop of initiating threads in the new process #task1.1
+//  // Allocate kernel stack.
+//  if((p->kstack = kalloc()) == 0){
+//    p->state = UNUSED;
+//    return 0;
+//  }
+//  sp = p->kstack + KSTACKSIZE;
+//
+//  // Leave room for trap frame.
+//  sp -= sizeof *p->tf;
+//  p->tf = (struct trapframe*)sp;
+//
+//  // Set up new context to start executing at forkret,
+//  // which returns to trapret.
+//  sp -= 4;
+//  *(uint*)sp = (uint)trapret;
+//
+//  sp -= sizeof *p->context;
+//  p->context = (struct context*)sp;
+//  memset(p->context, 0, sizeof *p->context);
+//  p->context->eip = (uint)forkret;
+
+  // changed #end
 
   return p;
 }
@@ -120,22 +179,48 @@ userinit(void)
   
   p = allocproc();
   initproc = p;
-  if((p->pgdir = setupkvm()) == 0)
-    panic("userinit: out of memory?");
-  inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
-  p->sz = PGSIZE;
-  memset(p->tf, 0, sizeof(*p->tf));
-  p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
-  p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
-  p->tf->es = p->tf->ds;
-  p->tf->ss = p->tf->ds;
-  p->tf->eflags = FL_IF;
-  p->tf->esp = PGSIZE;
-  p->tf->eip = 0;  // beginning of initcode.S
+  // changed #task1.1
+  // critical section for threads
+//  acquire(p->threadTable.lock); // todo: watch for deadlocks here
+  struct thread *t;
+  for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
+    if ((t->pgdir = setupkvm()) == 0) {
+      panic("userinit: out of memory?");
+    }
+    inituvm(t->pgdir, _binary_initcode_start, (int) _binary_initcode_size);
+    t->sz = PGSIZE;
+    memset(t->tf, 0, sizeof(*t->tf));
+    t->tf->cs = (SEG_UCODE << 3) | DPL_USER;
+    t->tf->ds = (SEG_UDATA << 3) | DPL_USER;
+    t->tf->es = t->tf->ds;
+    t->tf->ss = t->tf->ds;
+    t->tf->eflags = FL_IF;
+    t->tf->esp = PGSIZE;
+    t->tf->eip = 0;  // beginning of initcode.S
+  }
+//  release(p->threadTable.lock);
+  // end of critical section
+
+  // changed: removed to support threads #task1.1
+//  if((p->pgdir = setupkvm()) == 0)
+//    panic("userinit: out of memory?");
+//  inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
+//  p->sz = PGSIZE;
+//  memset(p->tf, 0, sizeof(*p->tf));
+//  p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
+//  p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
+//  p->tf->es = p->tf->ds;
+//  p->tf->ss = p->tf->ds;
+//  p->tf->eflags = FL_IF;
+//  p->tf->esp = PGSIZE;
+//  p->tf->eip = 0;  // beginning of initcode.S
+
+  // changed #end
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
+  p->threadTable.threads[0].state = T_RUNNABLE; // changed: first thread runnable #task1.1
   p->state = RUNNABLE;
 }
 
@@ -146,19 +231,26 @@ growproc(int n)
 {
   uint sz;
 
-    sz = proc->sz;
+  // changed #task1.1
+  sz = thread->sz;
   if(n > 0){
-    if((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0)
+    if ((sz = allocuvm(thread->pgdir, sz, sz + n)) == 0)
       return -1;
   } else if(n < 0){
-    if((sz = deallocuvm(proc->pgdir, sz, sz + n)) == 0)
+    if ((sz = deallocuvm(thread->pgdir, sz, sz + n)) == 0)
       return -1;
   }
-  proc->sz = sz;
-  switchuvm(proc);
+  thread->sz = sz;
+  switchuvm(thread);
+  // changed #end
   return 0;
 }
 
+/*
+ * todo: 1. Fork – should duplicate only the calling thread,
+ * if other threads exist in the process they will not
+ * exist in the new process
+ */
 // Create a new process copying p as the parent.
 // Sets up stack to return as if from system call.
 // Caller must set state of returned proc to RUNNABLE.
@@ -166,43 +258,62 @@ int
 fork(void)
 {
   int i, pid;
+//  int tid; // changed #tsak1.1
   struct proc *np;
+  struct thread *nt; // changed #task1.1
 
   // Allocate process.
   if((np = allocproc()) == 0)
     return -1;
 
+  // changed: supporting threads #task1.1
+  // first thread of the new process is the new embryo thread
+  nt = &np->threadTable.threads[0];
   // Copy process state from p.
-  if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
-    kfree(np->kstack);
-    np->kstack = 0;
-    np->state = UNUSED;
+  if ((nt->pgdir = copyuvm(thread->pgdir, thread->sz)) == 0) {
+    // case of failure
+    kfree(nt->kstack);
+    nt->kstack = 0;
+    nt->state = T_UNUSED;
     return -1;
   }
-  np->sz = proc->sz;
+  nt->sz = thread->sz;
+  // changed #end
+
   np->parent = proc;
-  *np->tf = *proc->tf;
+
+  // changed #task1.1
+  nt->parent = thread; // todo: is needed? #task1.1
+  *nt->tf = *thread->tf;
 
   // Clear %eax so that fork returns 0 in the child.
-  np->tf->eax = 0;
+  nt->tf->eax = 0;
+  // changed #end
 
+  // file system usage for process
   for(i = 0; i < NOFILE; i++)
     if(proc->ofile[i])
       np->ofile[i] = filedup(proc->ofile[i]);
   np->cwd = idup(proc->cwd);
 
-  safestrcpy(np->name, proc->name, sizeof(proc->name));
+  safestrcpy(np->name, proc->name, sizeof(proc->name)); // todo why?
 
-    pid = np->pid;
+  pid = np->pid;
+//  tid = nt->tid; // changed #task1.1
 
   // lock to force the compiler to emit the np->state write last.
   acquire(&ptable.lock);
   np->state = RUNNABLE;
+  nt->state = T_RUNNABLE; // changed #task1.1
   release(&ptable.lock);
 
     return pid;
 }
 
+/*
+ * todo: 3. Exit – should kill the process and all of its threads,
+ * remember while a single threads executing exit, others threads of the same process might still be running.
+ */
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
@@ -210,8 +321,10 @@ void
 exit(void)
 {
   struct proc *p;
+  struct thread *t; // changed #task1.1
   int fd;
 
+  // todo: do the same for threads - initthread?
   if(proc == initproc)
     panic("init exiting");
 
@@ -228,6 +341,7 @@ exit(void)
   end_op();
   proc->cwd = 0;
 
+  // start critical section for processes
   acquire(&ptable.lock);
 
   // Parent might be sleeping in wait().
@@ -244,6 +358,15 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   proc->state = ZOMBIE;
+  // changed #task1.1
+  // critical section for threads
+  acquire(proc->threadTable.lock); // todo: watch for deadlocks here
+  for(t = proc->threadTable.threads; t < &proc->threadTable.threads[NTHREAD]; t++){
+    t->state = T_ZOMBIE;
+  }
+  release(proc->threadTable.lock);
+  // end critical section
+  // changed #end
   sched();
   panic("zombie exit");
 }

@@ -4,6 +4,7 @@ struct file;
 struct inode;
 struct pipe;
 struct proc;
+struct thread; // changed #task1.1
 struct rtcdate;
 struct spinlock;
 struct stat;
@@ -179,7 +180,7 @@ void            freevm(pde_t*);
 void            inituvm(pde_t*, char*, uint);
 int             loaduvm(pde_t*, char*, struct inode*, uint, uint);
 pde_t*          copyuvm(pde_t*, uint);
-void            switchuvm(struct proc*);
+void            switchuvm(struct thread*); // changed: function argument's type #task1.1
 void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
