@@ -6,11 +6,9 @@
 #include "defs.h"
 #include "x86.h"
 #include "elf.h"
+
 /*
  * todo: 2. Exec – should start running on a single thread of the new process.
- * Note that in a multi-threaded environment a thread might be running while another thread of the same process is attempting to perform exec.
- * The thread performing exec should “tell” other threads of the same process to
- * destroy themselves and only then complete the exec task.
  * todo: Hint: You can review the code that is performed when the proc->killed field is set and write your implementation similarly.
  */
 int
@@ -93,13 +91,36 @@ exec(char *path, char **argv)
   safestrcpy(proc->name, last, sizeof(proc->name));
 
   // Commit to the user image.
-  oldpgdir = proc->pgdir;
-  proc->pgdir = pgdir;
-  proc->sz = sz;
-  proc->tf->eip = elf.entry;  // main
-  proc->tf->esp = sp;
-  switchuvm(proc);
+  // changed #task1.1
+  // critical section for threads
+  /*
+   * Note that in a multi-threaded environment a thread might be running while another thread of the same process is attempting to perform exec.
+   * The thread performing exec should “tell” other threads of the same process to
+   * destroy themselves and only then complete the exec task.
+   */
+  struct thread *t;
+  acquire(proc->threadTable.lock); // todo watch for deadlocks here
+  for (t = proc->threadTable.threads; t < &proc->threadTable.threads[NTHREAD]; t++) {
+    if (t->tid != thread->tid) {
+      t->killed = 1;
+      // Wake threads from sleep if necessary.
+      if (t->state == T_SLEEPING) {
+        t->state = T_RUNNABLE;
+      }
+    }
+  }
+
+  //only the thread preforming exec doing this piece of code
+  oldpgdir = thread->pgdir;
+  thread->pgdir = pgdir;
+  thread->sz = sz;
+  thread->tf->eip = elf.entry;  // main
+  thread->tf->esp = sp;
+  switchuvm(thread);
   freevm(oldpgdir);
+  release(proc->threadTable.lock);
+  // end of critical section
+  // changed #end
   return 0;
 
  bad:

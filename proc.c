@@ -377,6 +377,7 @@ int
 wait(void)
 {
   struct proc *p;
+    struct thread *t; // changed #task1.1
   int havekids, pid;
 
   acquire(&ptable.lock);
@@ -390,9 +391,26 @@ wait(void)
       if(p->state == ZOMBIE){
         // Found one.
         pid = p->pid;
-        kfree(p->kstack);
-        p->kstack = 0;
-        freevm(p->pgdir);
+          // changed: move to threads responsibility #task1.1
+//        kfree(p->kstack);
+//        p->kstack = 0;
+//        freevm(p->pgdir);
+          // CS for threads
+          acquire(p->threadTable.lock); // todo watch for deadlocks here #task1.1
+          for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
+              kfree(t->kstack);
+              t->kstack = 0;
+              freevm(t->pgdir);
+              t->state = T_UNUSED;
+              t->tid = 0;
+              t->parent = 0; // todo: is needed? #task1.1
+              t->name[0] = 0;
+              t->killed = 0;
+          }
+          release(p->threadTable.lock);
+          // end of CS
+          // changed #end
+
         p->state = UNUSED;
         p->pid = 0;
         p->parent = 0;
