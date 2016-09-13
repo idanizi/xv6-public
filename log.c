@@ -155,7 +155,8 @@ end_op(void)
     log.committing = 1;
   } else {
     // begin_op() may be waiting for log space.
-    wakeup(&log);
+      cprintf("log.c:159 wakeup(&log);\n"); // todo del
+      wakeup(&log);
   }
   release(&log.lock);
 
@@ -165,6 +166,7 @@ end_op(void)
     commit();
     acquire(&log.lock);
     log.committing = 0;
+      cprintf("log.c:170 wakeup(&log);\n"); // todo del
     wakeup(&log);
     release(&log.lock);
   }

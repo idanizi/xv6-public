@@ -61,9 +61,11 @@ pipeclose(struct pipe *p, int writable)
   acquire(&p->lock);
   if(writable){
     p->writeopen = 0;
+    cprintf("pipe.c:65 wakeup(&p->nread);\n"); // todo del
     wakeup(&p->nread);
   } else {
     p->readopen = 0;
+    cprintf("pipe.c:69 wakeup(&p->nwrite);\n"); // todo del
     wakeup(&p->nwrite);
   }
   if(p->readopen == 0 && p->writeopen == 0){
@@ -86,11 +88,13 @@ pipewrite(struct pipe *p, char *addr, int n)
         release(&p->lock);
         return -1;
       }
+      cprintf("pipe.c:92 wakeup(&p->nread);\n"); // todo del
       wakeup(&p->nread);
       sleep(&p->nwrite, &p->lock);  //DOC: pipewrite-sleep
     }
     p->data[p->nwrite++ % PIPESIZE] = addr[i];
   }
+  cprintf("pipe.c:98 wakeup(&p->nread);\n"); // todo del
   wakeup(&p->nread);  //DOC: pipewrite-wakeup1
   release(&p->lock);
   return n;
@@ -114,7 +118,8 @@ piperead(struct pipe *p, char *addr, int n)
       break;
     addr[i] = p->data[p->nread++ % PIPESIZE];
   }
-  wakeup(&p->nwrite);  //DOC: piperead-wakeup
+    cprintf("pipe.c:122 wakeup(&p->nwrite);\n"); // todo del
+    wakeup(&p->nwrite);  //DOC: piperead-wakeup
   release(&p->lock);
   return i;
 }

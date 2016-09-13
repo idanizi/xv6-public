@@ -38,11 +38,11 @@ trap(struct trapframe *tf)
 {
 //  cprintf("in trap(struct trapframe *tf)\n"); // todo del
   if(tf->trapno == T_SYSCALL){
-    if(proc->killed)
+    if(thread->killed) // changed #task1.1
       exit();
-    proc->tf = tf;
+    thread->tf = tf; // changed #task1.1
     syscall();
-    if(proc->killed)
+    if(thread->killed) // changed #task1.1
       exit();
     return;
   }
@@ -52,9 +52,7 @@ trap(struct trapframe *tf)
     if(cpu->id == 0){
       acquire(&tickslock);
       ticks++;
-//      cprintf("trap: call wakeup(&ticks);\n"); // todo del
-      wakeup(&ticks); // fixme infinite loop
-//      cprintf("trap: return from wakeup(&ticks);\n"); // todo del
+      wakeup(&ticks);
       release(&tickslock);
     }
     lapiceoi();

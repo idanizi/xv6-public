@@ -117,6 +117,7 @@ ideintr(void)
   // Wake process waiting for this buf.
   b->flags |= B_VALID;
   b->flags &= ~B_DIRTY;
+    cprintf("ide.c:120 wakeup(b);\n"); // todo del
   wakeup(b);
   
   // Start disk on next buf in queue.
