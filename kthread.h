@@ -61,13 +61,6 @@ struct thread {
 
 
 
-// todo: implement int kthread_join(int thread_id);
-/*
- * This function suspends the execution of the calling thread until the target thread (of the same process),
- * indicated by the argument thread_id, terminates. If the thread has already exited (or not exists),
- * execution should not be suspended. If successful, the function returns zero. Otherwise, -1 should be
- * returned to indicate an error.
- */
-// TODO: write a user program to test all the system calls stated above
+
 
 #endif //XV6_PUBLIC_KTHREAD_H

@@ -5,7 +5,7 @@
 #include "user.h"
 
 int main(int argc, char *argv[]){
-    // todo implement
+    // TODO: write a user program to test all the system calls stated above
     // todo: malloc for *stack at the user space program, pass the pointer by sysprpc.c to the system call in the kernel
     exit();
 }

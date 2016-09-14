@@ -590,8 +590,7 @@ sleep(void *chan, struct spinlock *lk) {
 //PAGEBREAK!
 // Wake up all processes sleeping on chan.
 // The ptable lock must be held.
-static void
-wakeup1(void *chan) {
+static void wakeup1(void *chan) {
 //    if (chan != &ticks)
     struct proc *p;
     // changed #task1.1
@@ -791,6 +790,18 @@ int kthread_id(void) {
     return -1; // fail
 }
 
+// Wake up all threads sleeping on chan.
+// The ptable lock must be held. // todo or the threadTable lock?
+void kthread_wakeup1(void *chan) {
+    struct thread *t;
+
+    for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
+        if (t->state == T_SLEEPING && t->chan == chan) {
+            t->state = T_RUNNABLE;
+        }// if thread sleeping
+    }// for thread
+}
+
 // todo: implement void kthread_exit();
 /*
  * This function terminates the execution of the calling thread. If called by a thread (even the main thread)
@@ -816,12 +827,89 @@ void kthread_exit() {
     other_threads_alive:
     // there are still threads alive in this process
     acquire(&ptable.lock);
-    thread->state = T_ZOMBIE;
+    thread->state = T_ZOMBIE; // change current thread state to die
+    kthread_wakeup1((void*)thread); // wake everybody who sleeps over this thread
     release(&ptable.lock);
     release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
 }
 
-int kthread_join(int thread_id) { // todo implement
-    return 0;
+void kthread_sleep(void *chan, struct spinlock *lk) {
+    if (!thread) {
+        panic("kthread_sleep thread");
+    }
+
+    if (lk == 0)
+        panic("kthread_sleep without lk");
+
+    // Must acquire ptable.lock in order to
+    // change p->state and then call sched.
+    // Once we hold ptable.lock, we can be
+    // guaranteed that we won't miss any wakeup
+    // (wakeup runs with ptable.lock locked),
+    // so it's okay to release lk.
+    if (lk != &ptable.lock) {  //DOC: sleeplock0
+        acquire(&ptable.lock);  //DOC: sleeplock1 // fixme panic acquire
+        release(lk); // fixme panic acquire
+    }
+
+    // Go to sleep.
+    thread->parent->state = RUNNABLE;
+    thread->chan = chan;
+    thread->state = T_SLEEPING;
+    sched();
+
+    // Tidy up.
+    thread->chan = 0;
+
+    // Reacquire original lock.
+    if (lk != &ptable.lock) {  //DOC: sleeplock2
+        release(&ptable.lock); // fixme panic acquire
+        acquire(lk); // fixme panic acquire
+    }
 }
+
+// todo: implement int kthread_join(int thread_id);
+/*
+ * This function suspends the execution of the calling thread until the target thread (of the same process),
+ * indicated by the argument thread_id, terminates. If the thread has already exited (or not exists),
+ * execution should not be suspended. If successful, the function returns zero. Otherwise, -1 should be
+ * returned to indicate an error.
+ */
+int kthread_join(int thread_id) {
+    struct thread *t;
+
+    acquire(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
+    if (thread_id == thread->tid)
+        return -1;// error: thread can't join itself
+
+    // find thread by tid
+    for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
+        if (t->tid == thread_id)
+            goto found;
+    }
+    // thread_id not found
+    release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
+    return -1;
+
+    found:
+    for (;;) {
+        if (t->state == T_ZOMBIE) {
+            kfree(t->kstack);
+            t->kstack = 0;
+            freevm(t->parent->pgdir);
+            t->state = T_UNUSED;
+            t->tid = 0;
+            t->parent = 0;
+            t->name[0] = 0;
+            t->killed = 0;
+            release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
+            return 0;
+        }
+        kthread_sleep(t, thread->parent->threadTable.lock); // fixme threadTable.lock need to sleep on deferment lock?
+    }
+}
+
+
+
+
 // changed #end
