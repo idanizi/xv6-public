@@ -164,7 +164,7 @@ switchkvm(void)
   lcr3(v2p(kpgdir));   // switch to the kernel page table
 }
 
-// TODO: support threads #task1.1
+// DONE: support threads #task1.1
 // Switch TSS and h/w page table to correspond to process p. // changed cancelled #task1.1
 // Switch TSS and h/w page table to correspond to thread t. // changed #task1.1
 void

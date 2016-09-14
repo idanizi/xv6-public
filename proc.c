@@ -415,7 +415,7 @@ wait(void) {
 }
 
 /*
- * todo: change scheduler in proc.c to support threads:
+ * DONE: change scheduler in proc.c to support threads:
  * As you have seen in assignment 1, XV6 implements scheduling policy that goes over the list of processes
  * and chooses the next RUNNABLE process in the array. You are expected to change the scheduling so it
  * will run over all the available threads of a specific process before proceeding to the next process. This is
@@ -791,7 +791,7 @@ int kthread_id(void) {
 }
 
 // Wake up all threads sleeping on chan.
-// The ptable lock must be held. // todo or the threadTable lock?
+// The ptable lock must be held.
 void kthread_wakeup1(void *chan) {
     struct thread *t;
 
@@ -802,7 +802,7 @@ void kthread_wakeup1(void *chan) {
     }// for thread
 }
 
-// todo: implement void kthread_exit();
+// DONE: implement void kthread_exit();
 /*
  * This function terminates the execution of the calling thread. If called by a thread (even the main thread)
  * while other threads exist within the same process, it shouldn’t terminate the whole process. If it is the
@@ -868,7 +868,7 @@ void kthread_sleep(void *chan, struct spinlock *lk) {
     }
 }
 
-// todo: implement int kthread_join(int thread_id);
+// DONE: implement int kthread_join(int thread_id);
 /*
  * This function suspends the execution of the calling thread until the target thread (of the same process),
  * indicated by the argument thread_id, terminates. If the thread has already exited (or not exists),
