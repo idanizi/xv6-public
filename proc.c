@@ -779,12 +779,46 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
     return t->tid;
 }
 
-int kthread_id(void) { // todo implement
-    return 0;
+// DONE: implement int kthread_id();
+/*
+ * Upon success, this function returns the caller thread's id. In case of error,
+ * a non-positive error identifier is returned. Remember, thread id and process id are not identical.
+ */
+int kthread_id(void) {
+    if (thread)
+        return thread->tid; // success
+
+    return -1; // fail
 }
 
-void kthread_exit() { // todo implement
+// todo: implement void kthread_exit();
+/*
+ * This function terminates the execution of the calling thread. If called by a thread (even the main thread)
+ * while other threads exist within the same process, it shouldn’t terminate the whole process. If it is the
+ * last running thread, process should terminate. Each thread must explicitly call kthread_exit() in order to
+ * terminate normally.
+ */
+void kthread_exit() {
+    struct thread *t;
 
+    if (!thread)
+        panic("try to kthread_exit with current thread null");
+
+    acquire(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
+    for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
+        if (t != T_UNUSED && t != thread)
+            goto other_threads_alive;
+    }
+    // this is the 'last man standing' thread in the parent process
+    release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
+    exit();
+
+    other_threads_alive:
+    // there are still threads alive in this process
+    acquire(&ptable.lock);
+    thread->state = T_ZOMBIE;
+    release(&ptable.lock);
+    release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
 }
 
 int kthread_join(int thread_id) { // todo implement

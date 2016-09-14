@@ -59,18 +59,8 @@ struct thread {
 
 // todo: thread system calls #task1.2
 
-// todo: implement int kthread_id();
-/*
- * Upon success, this function returns the caller thread's id. In case of error,
- * a non-positive error identifier is returned. Remember, thread id and process id are not identical.
- */
-// todo: implement void kthread_exit();
-/*
- * This function terminates the execution of the calling thread. If called by a thread (even the main thread)
- * while other threads exist within the same process, it shouldn’t terminate the whole process. If it is the
- * last running thread, process should terminate. Each thread must explicitly call kthread_exit() in order to
- * terminate normally.
- */
+
+
 // todo: implement int kthread_join(int thread_id);
 /*
  * This function suspends the execution of the calling thread until the target thread (of the same process),
