@@ -47,6 +47,21 @@ pinit(void) {
     // changed #end
 }
 
+// DONE: loop for init all 16 threads in the process:
+/*
+ * 1. first thread EMBRYO / runnable
+ * DONE: 2. all the rest are unused
+ * 3. tid for each thread
+ * 4. go for each field and initiate it:
+ * TODO: t->name;
+ * DONE: allocproc: t->state = EMBRYO;
+ * DONE: allocproc: t->tid = nexttid++;
+ * DONE: pinit: t->chan = 0;
+ * DONE: userinit/fork: t->context;
+ * DONE: pinit: t->killed = 0;
+ * DONE: allocproc: t->parent = p;
+ * DONE: userinit/fork: t->tf;
+ */
 //PAGEBREAK: 32
 // Look in the process table for an UNUSED proc.
 // If found, change state to EMBRYO and initialize
@@ -79,28 +94,8 @@ allocproc(void) {
 
     // assign thread table lock pointer to its lock in the threadLocks array.
     p->threadTable.lock = &threadLocks[pindex];
-    // changed #end
-
-    // changed: #task1.1
-    // DONE: loop for init all 16 threads in the process:
-    /*
-     * 1. first thread EMBRYO / runnable
-     * DONE: 2. all the rest are unused
-     * 3. tid for each thread
-     * 4. go for each field and initiate it:
-     * TODO: t->name;
-     * DONE: allocproc: t->state = EMBRYO;
-     * DONE: allocproc: t->tid = nexttid++;
-     * DONE: pinit: t->chan = 0;
-     * DONE: userinit/fork: t->context;
-     * DONE: pinit: t->killed = 0;
-     * DONE: allocproc: t->parent = p;
-     * DONE: userinit/fork: t->tf;
-     */
     struct thread *t = p->threadTable.threads; // first thread;
-
-    // NOTE: parent of thread its his process
-    t->parent = p;
+    t->parent = p;// NOTE: parent of thread its his process
     t->tid = nexttid++;
 
     // end of critical section process
@@ -108,7 +103,7 @@ allocproc(void) {
 
     // Allocate kernel stack.
     if ((t->kstack = kalloc()) == 0) {
-        t->state = UNUSED;
+        t->state = T_UNUSED;
         return 0;
     }
     sp = t->kstack + KSTACKSIZE;
@@ -225,7 +220,7 @@ growproc(int n) {
 }
 
 /*
- * todo: 1. Fork – should duplicate only the calling thread,
+ * DONE: 1. Fork – should duplicate only the calling thread,
  * if other threads exist in the process they will not
  * exist in the new process
  */
@@ -288,7 +283,7 @@ fork(void) {
 }
 
 /*
- * todo: 3. Exit – should kill the process and all of its threads,
+ * DONE: 3. Exit – should kill the process and all of its threads,
  * remember while a single threads executing exit, others threads of the same process might still be running.
  */
 // Exit the current process.  Does not return.
@@ -388,8 +383,8 @@ wait(void) {
                         t->kstack = 0;
                         freevm(t->parent->pgdir);
                         t->state = T_UNUSED;
-//                        t->tid = 0;// FIXME thread->tid = 0
-                        t->parent = 0; // todo: is needed? #task1.1
+                        t->tid = 0;
+                        t->parent = 0;
                         t->name[0] = 0;
                         t->killed = 0;
                     }
@@ -715,8 +710,73 @@ procdump(void) {
 }
 
 // changed: system calls supporting threads for the user space programs #task1.2
-int kthread_create(void *(*start_func)(), void *stack, int stack_size) { // todo implement
-    return 0;
+// DONE: implement int kthread_create( void*(*start_func)(), void* stack, int stack_size);
+/*
+ * look in allocproc and copy the code & idea
+ * You will need to create the stack in user mode and send its pointer to the system call in order to be
+ * consistent with current memory allocator of xv6.
+ *
+ * Calling kthread_create will create a new thread within the context of the calling process.
+ * The newly created thread state will be RUNNABLE.
+ * The caller of kthread_create must allocate a user stack for the new thread to use
+ * (it should be enough to allocate a single page i.e., 4K for the thread stack).
+ * This does not replace the kernel stack for the thread.
+ * start_func is a pointer to the entry function, which the thread will start executing.
+ * Upon success, the identifier of the newly created thread is returned.
+ * In case of an error, a non-positive value is returned.
+ */
+int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
+    struct thread *t;
+    char *sp;
+
+    if (!thread || !thread->parent)
+        return -1; // fail: null cases
+
+    acquire(thread->parent->threadTable.lock); // fixme deadlocks?
+    for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
+        if (t->state == T_UNUSED) {
+            goto found_thread;
+        }
+    }
+    release(thread->parent->threadTable.lock); // fixme deadlocks?
+    return -1; // fail: all 16 threads are busy
+
+    found_thread:
+    t->state = T_EMBRYO;
+
+    acquire(&ptable.lock); // fixme ptable.lock deadlocks?
+    t->tid = nexttid++;
+    release(&ptable.lock); // fixme ptable.lock deadlocks?
+
+    t->parent = thread->parent;
+    release(thread->parent->threadTable.lock); // fixme deadlocks?
+
+    // Allocate thread memory space
+    if ((t->kstack = stack) == 0) {
+        t->state = T_UNUSED;
+        return 0;
+    }
+    sp = t->kstack + stack_size;
+
+    // Leave room for trap frame.
+    sp -= sizeof *t->tf;
+    t->tf = (struct trapframe *) sp;
+
+    // Set up new context to start executing at forkret,
+    // which returns to trapret.
+    sp -= 4;
+    *(uint *) sp = (uint) trapret;
+
+    sp -= sizeof *t->context;
+    t->context = (struct context *) sp;
+    memset(t->context, 0, sizeof *t->context);
+    t->context->eip = (uint) start_func;
+
+    acquire(&ptable.lock);
+    t->state = T_RUNNABLE;
+    release(&ptable.lock);
+
+    return t->tid;
 }
 
 int kthread_id(void) { // todo implement

@@ -58,22 +58,7 @@ struct thread {
  */
 
 // todo: thread system calls #task1.2
-// todo: implement int kthread_create( void*(*start_func)(), void* stack, int stack_size);
-/*
- * look in allocproc and copy the code & idea
- * todo: malloc for *stack at the user space program, pass the pointer by sysprpc.c to the system call in the kernel
- * You will need to create the stack in user mode and send its pointer to the system call in order to be
- * consistent with current memory allocator of xv6.
- *
- * Calling kthread_create will create a new thread within the context of the calling process.
- * The newly created thread state will be RUNNABLE.
- * The caller of kthread_create must allocate a user stack for the new thread to use
- * (it should be enough to allocate a single page i.e., 4K for the thread stack).
- * This does not replace the kernel stack for the thread.
- * start_func is a pointer to the entry function, which the thread will start executing.
- * Upon success, the identifier of the newly created thread is returned.
- * In case of an error, a non-positive value is returned.
- */
+
 // todo: implement int kthread_id();
 /*
  * Upon success, this function returns the caller thread's id. In case of error,
