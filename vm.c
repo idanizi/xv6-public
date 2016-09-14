@@ -174,7 +174,7 @@ switchuvm(struct thread *t) // changed: function argument's type #task1.1
   cpu->gdt[SEG_TSS] = SEG16(STS_T32A, &cpu->ts, sizeof(cpu->ts)-1, 0);
   cpu->gdt[SEG_TSS].s = 0;
   cpu->ts.ss0 = SEG_KDATA << 3;
-  cpu->ts.esp0 = (uint)thread->kstack + KSTACKSIZE; // changed #task1.1
+  cpu->ts.esp0 = (uint)t->kstack + KSTACKSIZE; // changed #task1.1
   ltr(SEG_TSS << 3);
   if(t->parent->pgdir == 0) // changed #task1.1
     panic("switchuvm: no pgdir");
