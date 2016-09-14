@@ -303,7 +303,7 @@ iunlock(struct inode *ip)
 
   acquire(&icache.lock);
   ip->flags &= ~I_BUSY;
-    cprintf("fs.c:307 wakeup(ip);\n"); //todo del
+//    cprintf("fs.c:307 wakeup(ip);\n"); //todo del
   wakeup(ip); // FIXME: the source of "panic acquire" bug
   release(&icache.lock);
 }
@@ -330,7 +330,7 @@ iput(struct inode *ip)
     iupdate(ip);
     acquire(&icache.lock);
     ip->flags = 0;
-      cprintf("fs.c:334 wakeup(ip);\n"); // todo del
+//      cprintf("fs.c:334 wakeup(ip);\n"); // todo del
     wakeup(ip);
   }
   ip->ref--;
