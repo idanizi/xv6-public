@@ -94,19 +94,20 @@ allocproc(void) {
      * DONE: 2. all the rest are unused
      * 3. tid for each thread
      * 4. go for each field and initiate it:
-     * DONE: t->name;
-     * DONE: t->state;
-     * t->tid;
-     * t->chan;
-     * DONE: t->context;
-     * t->killed;
-     * DONE: t->parent;
-     * DONE: t->tf;
+     * TODO: t->name;
+     * DONE: allocproc: t->state = EMBRYO;
+     * DONE: allocproc: t->tid = nexttid++;
+     * DONE: pinit: t->chan = 0;
+     * DONE: userinit/fork: t->context;
+     * DONE: pinit: t->killed = 0;
+     * DONE: allocproc: t->parent = p;
+     * DONE: userinit/fork: t->tf;
      */
     struct thread *t = p->threadTable.threads; // first thread;
 
     // NOTE: parent of thread its his process
     t->parent = p;
+    t->tid = nexttid++;
 
     // end of critical section process
     release(&ptable.lock); // changed location #task1.1 // fixme panic acquire
@@ -306,10 +307,14 @@ void
 exit(void) {
 //    cprintf("in exit(void)\n"); // todo del
     if (proc || thread) { // todo del
-        if (proc)
+        cprintf("exiting ");
+        if (proc && proc->state == RUNNING)
             cprintf("proc->pid: %d ", proc->pid);
-        if (thread)
-            cprintf("thread->tid: %d", thread->tid);
+        if (thread && thread->state == T_RUNNING) {
+            cprintf("thread->tid: %d ", thread->tid);
+            if (thread->parent)
+                cprintf("thread->parent->pid: %d ", thread->parent->pid);
+        }
         cprintf("\n");
     }
 
@@ -354,7 +359,8 @@ exit(void) {
     // changed #task1.1
 //    thread->state = T_UNUSED;
     for (t = proc->threadTable.threads; t < &proc->threadTable.threads[NTHREAD]; t++) {
-        t->state = T_ZOMBIE;
+        if (t->state != T_UNUSED)
+            t->state = T_ZOMBIE;
     }
     // changed #end
     sched();
@@ -393,7 +399,7 @@ wait(void) {
                         t->kstack = 0;
                         freevm(t->parent->pgdir);
                         t->state = T_UNUSED;
-                        t->tid = 0;
+//                        t->tid = 0;// FIXME thread->tid = 0
                         t->parent = 0; // todo: is needed? #task1.1
                         t->name[0] = 0;
                         t->killed = 0;
