@@ -23,6 +23,10 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int kthread_create(void *(*start_func)(), void *stack, int stack_size); // changed #task1.2
+int kthread_id(void); // changed #task1.2
+void kthread_exit(); // changed #task1.2
+int kthread_join(int thread_id); // changed #task1.2
 
 // ulib.c
 int stat(char*, struct stat*);

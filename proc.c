@@ -713,3 +713,21 @@ procdump(void) {
         cprintf("\n");
     }
 }
+
+// changed: system calls supporting threads for the user space programs #task1.2
+int kthread_create(void *(*start_func)(), void *stack, int stack_size) { // todo implement
+    return 0;
+}
+
+int kthread_id(void) { // todo implement
+    return 0;
+}
+
+void kthread_exit() { // todo implement
+
+}
+
+int kthread_join(int thread_id) { // todo implement
+    return 0;
+}
+// changed #end

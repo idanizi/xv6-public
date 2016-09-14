@@ -89,3 +89,24 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// changed: support threads system calls #task2.1
+int sys_kthread_create(void) { // todo implement
+  return 0;
+}
+
+int sys_kthread_id(void) { // todo implement
+  return 0;
+
+}
+
+int sys_kthread_exit(void) { // todo implement
+  return 0;
+
+}
+
+int sys_kthread_join(void) { // todo implement
+  return 0;
+
+}
+//changed #end
