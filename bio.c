@@ -136,7 +136,6 @@ brelse(struct buf *b)
   bcache.head.next = b;
 
   b->flags &= ~B_BUSY;
-//    cprintf("bio.c:140 wakeup(b);\n"); // todo del
   wakeup(b);
 
   release(&bcache.lock);

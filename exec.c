@@ -8,13 +8,12 @@
 #include "elf.h"
 
 /*
- * todo: 2. Exec – should start running on a single thread of the new process.
+ * DONE: 2. Exec – should start running on a single thread of the new process.
  * todo: Hint: You can review the code that is performed when the proc->killed field is set and write your implementation similarly.
  */
 int
 exec(char *path, char **argv)
 {
-  cprintf(">> in exec <<\n"); // todo del
   char *s, *last;
   int i, off;
   uint argc, sz, sp, ustack[3+MAXARG+1];

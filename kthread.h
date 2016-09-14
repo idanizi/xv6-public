@@ -10,12 +10,12 @@ enum threadstate {
 };
 
 struct thread {
-//    uint sz;                     // Size of thread memory (bytes)
-//    pde_t* pgdir;                // Page table - todo: is needed for threads?
+//    uint sz;                     // Size of thread memory (bytes) // note: stayed in process
+//    pde_t* pgdir;                // Page table // note: stayed in process
     char *kstack;                // Bottom of kernel stack for this thread
     enum threadstate state;      // Thread state
     int tid;                     // Thread ID
-    struct proc *parent;       // Parent thread // TODO: is needed for threads?
+    struct proc *parent;       // Parent thread // DONE: is needed for threads
     struct trapframe *tf;        // Trap frame for current syscall
     struct context *context;     // swtch() here to run thread
     void *chan;                  // If non-zero, sleeping on chan
@@ -27,14 +27,14 @@ struct thread {
 
 // DONE: 1. contains some constants, as well as the prototypes of the KLT package API functions.
 // DONE: 2. Understand what each of the fields in proc struct means to the process.
-// todo: 3. transfer the entire system to work with the new thread structure.
-// todo: 4. every process will have 1 initial thread running in it.
+// DONE: 3. transfer the entire system to work with the new thread structure.
+// DONE: 4. every process will have 1 initial thread running in it.
 // todo: 5. create the system calls that will allow the user to create and manage new threads.
 
 
 
 /*
- * TODO: moving to threads #task1.1
+ * DONE: moving to threads #task1.1
  * DONE: 1. Add a pointer to current thread (of type struct thread) right after the pointer to proc struct
  * (see struct cpu at proc.h).
  * DONE: 2. Update function seginit (see vm.c) so that the line 31:
@@ -44,7 +44,7 @@ struct thread {
  * DONE: 3. Add a global pointer to current thread by inserting following line to proc.h:
  * extern struct thread *thread asm("%gs:8");
  */
-// todo: additional changes may be required (e.g., the scheduler, for example, must update thread in addition to proc).
+// DONE: additional changes may be required (e.g., the scheduler, for example, must update thread in addition to proc).
 // DONE: Add a constant to kthread.h called NTHREAD = 16.
 // DONE: each process should contain its own static array of threads.
 
@@ -54,10 +54,7 @@ struct thread {
  */
 
 /*
- * todo: EXPECTED BEHAVIOR:
-
-
-
+ * DONE: EXPECTED BEHAVIOR:
  */
 
 // todo: thread system calls #task1.2

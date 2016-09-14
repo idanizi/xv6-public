@@ -36,7 +36,6 @@ idtinit(void)
 void
 trap(struct trapframe *tf)
 {
-//  cprintf("in trap(struct trapframe *tf)\n"); // todo del
   if(tf->trapno == T_SYSCALL){
     if(thread->killed) // changed #task1.1
       exit();

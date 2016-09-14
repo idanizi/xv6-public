@@ -217,7 +217,6 @@ consoleintr(int (*getc)(void))
         consputc(c);
         if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){
           input.w = input.e;
-//            cprintf("console.c:221 wakeup(&input.r);\n"); // todo del
           wakeup(&input.r);
         }
       }
