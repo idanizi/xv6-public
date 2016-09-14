@@ -91,7 +91,7 @@ sys_uptime(void)
 }
 
 // changed: support threads system calls #task2.1
-int sys_kthread_create(void) { // todo implement
+int sys_kthread_create(void) {
     void *(*start_func)() = 0;
     void *stack = 0;
     int stack_size = 0;
