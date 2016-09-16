@@ -99,16 +99,20 @@ exec(char *path, char **argv)
    * destroy themselves and only then complete the exec task.
    */
   struct thread *t;
-//  acquire(proc->threadTable.lock); // fixme deadlocks
-  for (t = proc->threadTable.threads; t < &proc->threadTable.threads[NTHREAD]; t++) {
-    if (t->tid != thread->tid) {
+  acquire(thread->parent->threadTable.lock); // fixme deadlocks
+  for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
+    if (t->tid != thread->tid && t->state != T_UNUSED) {
       t->killed = 1;
+      t->state = T_ZOMBIE;
+
       // Wake threads from sleep if necessary.
       if (t->state == T_SLEEPING) {
         t->state = T_RUNNABLE;
       }
     }
   }
+  release(proc->threadTable.lock); // fixme deadlocks
+
 
   //only the thread preforming exec doing this piece of code
   oldpgdir = thread->parent->pgdir;

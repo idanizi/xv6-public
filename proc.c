@@ -323,6 +323,8 @@ exit(void) {
         }
     }
 
+    // TODO: kthread_join to all other threads
+
     begin_op();
     iput(proc->cwd);
     end_op();
@@ -588,16 +590,16 @@ sleep(void *chan, struct spinlock *lk) {
     }
 
     // Go to sleep.
-    proc->chan = chan;
-    proc->state = SLEEPING;
     // changed #task1.1
+//    proc->chan = chan;
+//    proc->state = SLEEPING;
     thread->chan = chan;
     thread->state = T_SLEEPING;
     //changed #end
     sched();
 
     // Tidy up.
-    proc->chan = 0;
+//    proc->chan = 0; // changed #task1.1
     thread->chan = 0; // changed #task1.1
 
     // Reacquire original lock.
@@ -617,8 +619,7 @@ static void wakeup1(void *chan) {
     struct thread *t;
 
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
-        if (p->state == SLEEPING && p->chan == chan) {
-            p->state = RUNNABLE;
+        if (p->state == RUNNABLE || p->state == RUNNING) {
             for(t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++){
                 if(t->state == T_SLEEPING && t->chan == chan){
                     t->state = T_RUNNABLE;
@@ -632,13 +633,8 @@ static void wakeup1(void *chan) {
 // Wake up all processes sleeping on chan.
 void
 wakeup(void *chan) {
-//    if (chan != &ticks)
     acquire(&ptable.lock); // fixme panic acquire
-//    if (proc)
-//        acquire(proc->threadTable.lock); // fixme deadlock
     wakeup1(chan);
-//    if (proc)
-//        release(proc->threadTable.lock); // fixme deadlock
     release(&ptable.lock); // fixme panic acquire
 }
 
@@ -655,29 +651,19 @@ kill(int pid) {
         if (p->pid == pid) {
             p->killed = 1;
             // changed #task1.1
-//            acquire(p->threadTable.lock);// fixme deadlock?
-            for(t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++){
+            for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
                 t->killed = 1;
-            }
-//            release(p->threadTable.lock);// fixme deadlock?
-            //changed #end
-            // Wake process from sleep if necessary.
-            if (p->state == SLEEPING) {
-                p->state = RUNNABLE;
-                // changed #task1.1
-//                acquire(p->threadTable.lock);// fixme deadlock?
-                for(t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++){
-                    if(t->state == T_SLEEPING){
-                        t->state = T_RUNNABLE;
-                    }
+                // wake threads from sleep
+                if (t->state == T_SLEEPING) {
+                    t->state = T_RUNNABLE;
                 }
-//                release(p->threadTable.lock);// fixme deadlock?
-                // changed #end
             }
             release(&ptable.lock); // fixme panic acquire
             return 0;
+            // changed #end
         }
     }
+
     release(&ptable.lock); // fixme panic acquire
     return -1;
 }
@@ -691,7 +677,7 @@ procdump(void) {
     static char *states[] = {
             [UNUSED]    "unused",
             [EMBRYO]    "embryo",
-            [SLEEPING]  "sleep ",
+//            [SLEEPING]  "sleep ",
             [RUNNABLE]  "runble",
             [RUNNING]   "run   ",
             [ZOMBIE]    "zombie"
@@ -790,10 +776,10 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
     memset(t->context, 0, sizeof *t->context);
     t->context->eip = (uint) forkret;
 
-    // grow process memory
-//    if (growproc(stack_size) < 0) {
-//        // todo fail growproc? delete this?
-//    }
+    // todo is needed in kthread_create?: grow process memory
+    if (growproc(PGSIZE) < 0) {
+        panic("kthread_create growproc failed");
+    }
 
 
     // setup new thread trap-frame as current thread trap-frame
@@ -810,7 +796,7 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
     t->state = T_RUNNABLE;
     release(&ptable.lock);
 
-    cprintf("tid %d created\n", t->tid); // todo del
+    cprintf("kthread_create: tid %d created\n", t->tid); // todo del
 
     return t->tid;
 }
@@ -821,7 +807,7 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
  * a non-positive error identifier is returned. Remember, thread id and process id are not identical.
  */
 int kthread_id(void) {
-    cprintf("in kthread_id\n");
+    cprintf("in kthread_id\n"); // todo del
     if (thread)
         return thread->tid; // success
 
@@ -943,6 +929,8 @@ int kthread_join(int thread_id) {
     for (;;) {
         if(t->state == T_UNUSED || t->killed == 1){
             // error: joining illegal thread
+            cprintf("join: tid=%d: error: thread_id = %d t->killed=%d t->state=%d\n", thread->tid, thread_id, t->killed,
+                    t->state); // todo del
             release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
             return -1;
         }
