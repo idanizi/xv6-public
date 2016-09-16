@@ -593,6 +593,7 @@ sleep(void *chan, struct spinlock *lk) {
     // changed #task1.1
 //    proc->chan = chan;
 //    proc->state = SLEEPING;
+    proc->state = RUNNABLE;
     thread->chan = chan;
     thread->state = T_SLEEPING;
     //changed #end
@@ -696,20 +697,22 @@ procdump(void) {
         else
             state = "???";
         cprintf("%d %s %s", p->pid, state, p->name);
-        if (p->state == SLEEPING) {
-            // changed #task1.1
+        // changed #task1.1
+//        if (p->state == SLEEPING) {
 //            acquire(p->threadTable.lock);// fixme deadlock?
-            for(t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++){
+        for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
+            if (t->state == T_SLEEPING) {
                 getcallerpcs((uint *) t->context->ebp + 2, pc);
                 for (i = 0; i < 10 && pc[i] != 0; i++)
                     cprintf(" %p", pc[i]);
             }
+        }
 //            release(p->threadTable.lock);// fixme deadlock?
 //            getcallerpcs((uint *) p->context->ebp + 2, pc);
 //            for (i = 0; i < 10 && pc[i] != 0; i++)
 //                cprintf(" %p", pc[i]);
-            //changed #end
-        }
+//        } // if (p->state == SLEEPING)
+        //changed #end
         cprintf("\n");
     }
 }
@@ -852,7 +855,7 @@ void kthread_exit() {
     // there are still threads alive in this process
     acquire(&ptable.lock);
     thread->state = T_ZOMBIE; // change current thread state to die
-    kthread_wakeup1((void*)thread); // wake everybody who sleeps over this thread
+    wakeup1((void *) thread); // wake everybody who sleeps over this thread
     release(&ptable.lock);
     release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
 }
@@ -949,7 +952,7 @@ int kthread_join(int thread_id) {
             return 0;
         }
         cprintf("join: tid: %d going to sleep on tid: %d\n", thread->tid, t->tid); // todo del
-        kthread_sleep(t, thread->parent->threadTable.lock); // fixme threadTable.lock need to sleep on deferment lock?
+        sleep(t, thread->parent->threadTable.lock); // fixme threadTable.lock need to sleep on deferment lock?
         cprintf("join: tid: %d waked\n", thread->tid); // todo del
     }
 }
