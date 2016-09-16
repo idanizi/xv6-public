@@ -37,11 +37,11 @@ void
 trap(struct trapframe *tf)
 {
   if(tf->trapno == T_SYSCALL){
-    if(thread->killed) // changed #task1.1
+    if(thread->parent->killed) // changed #task1.1
       exit();
     thread->tf = tf; // changed #task1.1
     syscall();
-    if(thread->killed) // changed #task1.1
+    if(thread->parent->killed) // changed #task1.1
       exit();
     return;
   }
@@ -87,10 +87,10 @@ trap(struct trapframe *tf)
       panic("trap");
     }
     // In user space, assume process misbehaved.
-    cprintf("pid %d %s: trap %d err %d on cpu %d "
+          cprintf("pid=%d tid=%d %s: trap %d err %d on cpu %d "
             "eip 0x%x addr 0x%x--kill proc\n",
-            proc->pid, proc->name, tf->trapno, tf->err, cpu->id, tf->eip, 
-            rcr2());
+                  proc->pid, thread->tid, proc->name, tf->trapno, tf->err, cpu->id, tf->eip,
+                  rcr2()); // changed task1.2
     proc->killed = 1;
   }
 

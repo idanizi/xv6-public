@@ -190,11 +190,13 @@ userinit(void) {
 
     // changed #end
 
-    safestrcpy(t->name, "initcode", sizeof(t->name)); // changed #task1.1 // todo is needed?
+    safestrcpy(p->name, "initcode", sizeof(p->name)); // changed #task1.1 // todo is needed?
     p->cwd = namei("/");
 
+    acquire(&ptable.lock); // fixme &ptable.lock deadlock?
     t->state = T_RUNNABLE; // changed: first thread runnable #task1.1
     p->state = RUNNABLE;
+    release(&ptable.lock); // fixme &ptable.lock deadlock?
 }
 
 // Grow current process's memory by n bytes.
@@ -278,6 +280,7 @@ fork(void) {
     acquire(&ptable.lock);  // fixme panic acquire
     np->state = RUNNABLE;
     nt->state = T_RUNNABLE; // changed #task1.1
+    cprintf("fork: nt->tid: %d created\n", nt->tid); // todo del
     release(&ptable.lock); // fixme panic acquire
 
     return pid;
@@ -434,7 +437,7 @@ wait(void) {
 //      via swtch back to the scheduler.
 void
 scheduler(void) {
-//    cprintf("in scheduler\n"); // todo del
+    cprintf("in scheduler\n"); // todo del
     struct proc *p;
     struct thread *t; // changed #task1.1
 
@@ -455,14 +458,23 @@ scheduler(void) {
             // changed #task1.1
             // loop until find runnable thread
 //            cprintf("scheduler: loop until find runnable thread\n"); // todo del
-            for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD] && t->state != T_RUNNABLE; t++);
-            if (t >= &p->threadTable.threads[NTHREAD]) {
-                // no runnable threads available in this process, so jump to next process
-                continue;
+//            for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD] && t->state != T_RUNNABLE; t++);
+//            if (t >= &p->threadTable.threads[NTHREAD]) {
+//                // no runnable threads available in this process, so jump to next process
+//                continue;
+//            }
+
+            for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
+                if (t->state == T_RUNNABLE)
+                    goto found;
             }
+            // no runnable threads at this process, jump to next process
+            continue;
+
+            // found runnable thread at this process
+            found:
             // changed #end
 
-//            cprintf("scheduler: proc = p;\n"); // todo del
             proc = p;
 
             // changed #task1.1
@@ -473,18 +485,16 @@ scheduler(void) {
 
             p->state = RUNNING;
 
-//            cprintf("scheduler: try swtch(&cpu->scheduler, thread->context);\n"); // todo del
+            if (p->pid != t->tid) // todo del
+                cprintf("scheduler: running pid=%d tid=%d\n", p->pid, t->tid); // todo del
             swtch(&cpu->scheduler, thread->context); // changed #task1.1
-//            cprintf("scheduler: try switchkvm();\n"); // todo del
             switchkvm();
 
             // Process is done running for now.
             // It should change its p->state before coming back.
-//            cprintf("scheduler: Process is done running for now\n"); // todo del
             thread = 0; // changed #task1.1
             proc = 0;
         }
-//        cprintf("scheduler: try release(&ptable.lock);\n"); // todo del
         release(&ptable.lock); // fixme panic acquire
 
     }
@@ -515,6 +525,7 @@ sched(void) {
     if (readeflags() & FL_IF)
         panic("sched interruptible");
     intena = cpu->intena;
+//    cprintf("sched: tid: %d try swtch\n", thread->tid); // todo del
     swtch(&thread->context, cpu->scheduler); // changed #task1.1
     cpu->intena = intena;
 }
@@ -799,6 +810,8 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
     t->state = T_RUNNABLE;
     release(&ptable.lock);
 
+    cprintf("tid %d created\n", t->tid); // todo del
+
     return t->tid;
 }
 
@@ -808,6 +821,7 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
  * a non-positive error identifier is returned. Remember, thread id and process id are not identical.
  */
 int kthread_id(void) {
+    cprintf("in kthread_id\n");
     if (thread)
         return thread->tid; // success
 
@@ -858,10 +872,11 @@ void kthread_exit() {
 }
 
 void kthread_sleep(void *chan, struct spinlock *lk) {
-    cprintf("in thread sleep\n"); // todo del
     if (!thread) {
         panic("kthread_sleep thread");
     }
+
+    cprintf("in thread sleep, tid: %d\n", thread->tid); // todo del
 
     if (lk == 0)
         panic("kthread_sleep without lk");
@@ -872,17 +887,18 @@ void kthread_sleep(void *chan, struct spinlock *lk) {
     // guaranteed that we won't miss any wakeup
     // (wakeup runs with ptable.lock locked),
     // so it's okay to release lk.
-    cprintf("thread sleep: switch locks - if (lk != &ptable.lock)\n"); // todo del
+    cprintf("thread sleep: tid=%d: switch locks - if (lk != &ptable.lock)\n", thread->tid); // todo del
     if (lk != &ptable.lock) {  //DOC: sleeplock0
         acquire(&ptable.lock);  //DOC: sleeplock1 // fixme panic acquire
         release(lk); // fixme panic acquire
     }
 
     // Go to sleep.
-    cprintf("thread sleep: change states & sched()\n"); // todo del
+    cprintf("thread sleep: tid=%d: change states\n", thread->tid); // todo del
     thread->parent->state = RUNNABLE;
     thread->chan = chan;
     thread->state = T_SLEEPING;
+    cprintf("thread sleep: tid=%d: sched\n", thread->tid); // todo del
     sched();
 
     // Tidy up.
@@ -923,10 +939,15 @@ int kthread_join(int thread_id) {
     return -1;
 
     found:
-    cprintf("join: thread_id found\n"); // todo del
+    cprintf("join: thread_id = %d found\n", thread_id); // todo del
     for (;;) {
+        if(t->state == T_UNUSED || t->killed == 1){
+            // error: joining illegal thread
+            release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
+            return -1;
+        }
         if (t->state == T_ZOMBIE) {
-            cprintf("join: deleting zombie\n"); // todo del
+            cprintf("join: tid=%d: deleting zombie tid = %d\n", thread->tid, t->tid); // todo del
             if (t->kstack)
                 kfree(t->kstack);
             t->kstack = 0;
@@ -939,13 +960,9 @@ int kthread_join(int thread_id) {
             release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
             return 0;
         }
-        cprintf("join: going to sleep\n"); // todo del
+        cprintf("join: tid: %d going to sleep on tid: %d\n", thread->tid, t->tid); // todo del
         kthread_sleep(t, thread->parent->threadTable.lock); // fixme threadTable.lock need to sleep on deferment lock?
-        cprintf("join: waked\n"); // todo del
+        cprintf("join: tid: %d waked\n", thread->tid); // todo del
     }
 }
-
-
-
-
 // changed #end
