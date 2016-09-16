@@ -759,11 +759,11 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
     release(thread->parent->threadTable.lock); // fixme deadlocks?
 
     // FIXME: Allocate thread memory space
-    if ((t->kstack = stack) == 0) {
+    if ((t->kstack = kalloc()) == 0) {
         t->state = T_UNUSED;
         return 0;
     }
-    sp = t->kstack + stack_size;
+    sp = t->kstack + KSTACKSIZE;
 
     // Leave room for trap frame.
     sp -= sizeof *t->tf;
@@ -780,17 +780,20 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
     t->context->eip = (uint) forkret;
 
     // grow process memory
-    if (growproc(PGSIZE) < 0) {
-        // todo fail growproc
-    }
+//    if (growproc(stack_size) < 0) {
+//        // todo fail growproc? delete this?
+//    }
+
+
     // setup new thread trap-frame as current thread trap-frame
-    *t->tf = *thread->tf;
-
-    // Clear %eax so that fork returns 0 in the child.
-    t->tf->eax = 0;
-
-    // set eip to start from start_func
-    t->tf->eip = (uint) start_func;
+    memset(t->tf, 0, sizeof(*t->tf));
+    t->tf->cs = (SEG_UCODE << 3) | DPL_USER;
+    t->tf->ds = (SEG_UDATA << 3) | DPL_USER;
+    t->tf->es = t->tf->ds;
+    t->tf->ss = t->tf->ds;
+    t->tf->eflags = FL_IF;
+    t->tf->esp = (uint) stack + stack_size;
+    t->tf->eip = (uint) start_func; // set eip to start from start_func
 
     acquire(&ptable.lock);
     t->state = T_RUNNABLE;
