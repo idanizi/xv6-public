@@ -737,8 +737,15 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
     struct thread *t;
     char *sp;
 
+
     if (!thread || !thread->parent)
         return -1; // fail: null cases
+
+    if (stack_size > KSTACKSIZE) {
+        cprintf("kthread_create: pid=%d tid=%d: error: %d = stack_size > KSTACKSIZE = %d\n", proc->pid,
+                thread->tid, stack_size, KSTACKSIZE);
+        return -1;
+    }
 
     acquire(thread->parent->threadTable.lock); // fixme deadlocks?
     for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
@@ -761,7 +768,7 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
     // FIXME: Allocate thread memory space
     if ((t->kstack = kalloc()) == 0) {
         t->state = T_UNUSED;
-        return 0;
+        return -1;
     }
     sp = t->kstack + KSTACKSIZE;
 
@@ -780,9 +787,9 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
     t->context->eip = (uint) forkret;
 
     // todo is needed in kthread_create?: grow process memory
-    if (growproc(PGSIZE) < 0) {
-        panic("kthread_create growproc failed");
-    }
+//    if (growproc(KSTACKSIZE) < 0) {
+//        panic("kthread_create growproc failed");
+//    }
 
 
     // setup new thread trap-frame as current thread trap-frame
@@ -799,7 +806,7 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
     t->state = T_RUNNABLE;
     release(&ptable.lock);
 
-    cprintf("kthread_create: tid %d created\n", t->tid); // todo del
+    cprintf("kthread_create: tid %d created, start_func: 0x%x\n", t->tid, start_func); // todo del
 
     return t->tid;
 }
@@ -819,15 +826,15 @@ int kthread_id(void) {
 
 // Wake up all threads sleeping on chan.
 // The ptable lock must be held.
-void kthread_wakeup1(void *chan) {
-    struct thread *t;
-
-    for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
-        if (t->state == T_SLEEPING && t->chan == chan) {
-            t->state = T_RUNNABLE;
-        }// if thread sleeping
-    }// for thread
-}
+//void kthread_wakeup1(void *chan) {
+//    struct thread *t;
+//
+//    for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
+//        if (t->state == T_SLEEPING && t->chan == chan) {
+//            t->state = T_RUNNABLE;
+//        }// if thread sleeping
+//    }// for thread
+//}
 
 // DONE: implement void kthread_exit();
 /*
@@ -860,46 +867,46 @@ void kthread_exit() {
     release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
 }
 
-void kthread_sleep(void *chan, struct spinlock *lk) {
-    if (!thread) {
-        panic("kthread_sleep thread");
-    }
-
-    cprintf("in thread sleep, tid: %d\n", thread->tid); // todo del
-
-    if (lk == 0)
-        panic("kthread_sleep without lk");
-
-    // Must acquire ptable.lock in order to
-    // change p->state and then call sched.
-    // Once we hold ptable.lock, we can be
-    // guaranteed that we won't miss any wakeup
-    // (wakeup runs with ptable.lock locked),
-    // so it's okay to release lk.
-    cprintf("thread sleep: tid=%d: switch locks - if (lk != &ptable.lock)\n", thread->tid); // todo del
-    if (lk != &ptable.lock) {  //DOC: sleeplock0
-        acquire(&ptable.lock);  //DOC: sleeplock1 // fixme panic acquire
-        release(lk); // fixme panic acquire
-    }
-
-    // Go to sleep.
-    cprintf("thread sleep: tid=%d: change states\n", thread->tid); // todo del
-    thread->parent->state = RUNNABLE;
-    thread->chan = chan;
-    thread->state = T_SLEEPING;
-    cprintf("thread sleep: tid=%d: sched\n", thread->tid); // todo del
-    sched();
-
-    // Tidy up.
-    thread->chan = 0;
-
-    // Reacquire original lock.
-    cprintf("thread sleep: Reacquire original lock\n"); // todo del
-    if (lk != &ptable.lock) {  //DOC: sleeplock2
-        release(&ptable.lock); // fixme panic acquire
-        acquire(lk); // fixme panic acquire
-    }
-}
+//void kthread_sleep(void *chan, struct spinlock *lk) {
+//    if (!thread) {
+//        panic("kthread_sleep thread");
+//    }
+//
+//    cprintf("in thread sleep, tid: %d\n", thread->tid); // todo del
+//
+//    if (lk == 0)
+//        panic("kthread_sleep without lk");
+//
+//    // Must acquire ptable.lock in order to
+//    // change p->state and then call sched.
+//    // Once we hold ptable.lock, we can be
+//    // guaranteed that we won't miss any wakeup
+//    // (wakeup runs with ptable.lock locked),
+//    // so it's okay to release lk.
+//    cprintf("thread sleep: tid=%d: switch locks - if (lk != &ptable.lock)\n", thread->tid); // todo del
+//    if (lk != &ptable.lock) {  //DOC: sleeplock0
+//        acquire(&ptable.lock);  //DOC: sleeplock1 // fixme panic acquire
+//        release(lk); // fixme panic acquire
+//    }
+//
+//    // Go to sleep.
+//    cprintf("thread sleep: tid=%d: change states\n", thread->tid); // todo del
+//    thread->parent->state = RUNNABLE;
+//    thread->chan = chan;
+//    thread->state = T_SLEEPING;
+//    cprintf("thread sleep: tid=%d: sched\n", thread->tid); // todo del
+//    sched();
+//
+//    // Tidy up.
+//    thread->chan = 0;
+//
+//    // Reacquire original lock.
+//    cprintf("thread sleep: Reacquire original lock\n"); // todo del
+//    if (lk != &ptable.lock) {  //DOC: sleeplock2
+//        release(&ptable.lock); // fixme panic acquire
+//        acquire(lk); // fixme panic acquire
+//    }
+//}
 
 // DONE: implement int kthread_join(int thread_id);
 /*

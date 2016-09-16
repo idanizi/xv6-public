@@ -4,7 +4,11 @@
 #include "stat.h"
 #include "user.h"
 
-void run() {
+void run2(){
+
+}
+
+void * run() {
     printf(1, "in user space run()\n");
 //    int id = kthread_id();
 //    int pid = getpid();
@@ -14,20 +18,25 @@ void run() {
 //    while(uptime() - time < 1000);
 //    printf(1, "hey\n");
     kthread_exit();
+    return (void *) 1;
 }
 
 int main(int argc, char *argv[]){
     int stack_size = 4000;
     void *stack = (void *) malloc(stack_size);
     void *(*start_func)();
-    start_func = (void *) &run;
+    start_func = run;
     int pid = getpid();
-    printf(1, "testTreads: main: pid=%d: creating thread\n", pid);
+    printf(1, "testTreads: main: pid=%d: creating thread, start_func: %d\n", pid, run);
     int tid = kthread_create(start_func, stack, stack_size);
     printf(1, "testTreads: main: pid=%d: join thread\n", pid);
-    printf(1, "testTreads: main: pid=%d: sleep 1000 ticks\n", pid);
-    int time = uptime();
-    while (uptime() - time < 1000);
+//    printf(1, "testTreads: main: pid=%d: sleep 1000 ticks\n", pid);
+//    int time = uptime();
+//    int count = 0;
+//    while (uptime() - time < 1000){
+//        count++;
+//    }
+//    printf(1, "testTreads: main: pid=%d: finish sleep %d", pid, count);
     int rest = kthread_join(tid);
     printf(1, "testTreads: main: pid=%d: after join\n");
     printf(1, "testTreads: main: pid=%d: result: %d, tid: %d\n", pid, rest, tid);

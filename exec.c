@@ -104,11 +104,7 @@ exec(char *path, char **argv)
     if (t->tid != thread->tid && t->state != T_UNUSED) {
       t->killed = 1;
       t->state = T_ZOMBIE;
-
-      // Wake threads from sleep if necessary.
-      if (t->state == T_SLEEPING) {
-        t->state = T_RUNNABLE;
-      }
+      wakeup(t);
     }
   }
   release(proc->threadTable.lock); // fixme deadlocks
