@@ -9,7 +9,6 @@
 
 /*
  * DONE: 2. Exec – should start running on a single thread of the new process.
- * todo: Hint: You can review the code that is performed when the proc->killed field is set and write your implementation similarly.
  */
 int
 exec(char *path, char **argv)
@@ -97,18 +96,25 @@ exec(char *path, char **argv)
    * Note that in a multi-threaded environment a thread might be running while another thread of the same process is attempting to perform exec.
    * The thread performing exec should “tell” other threads of the same process to
    * destroy themselves and only then complete the exec task.
+   * Hint: You can review the code that is performed when the proc->killed field is set and write your implementation
+   * similarly.
    */
   struct thread *t;
   acquire(thread->parent->threadTable.lock); // fixme deadlocks
   for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
     if (t->tid != thread->tid && t->state != T_UNUSED) {
       t->killed = 1;
-      t->state = T_ZOMBIE;
-      wakeup(t);
+      // wake threads from sleep to finish their run
+      if (t->state == T_SLEEPING) t->state = T_RUNNABLE;
     }
   }
   release(proc->threadTable.lock); // fixme deadlocks
 
+  // look for killed threads and join them (wait for them to finish their run)
+  for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
+    if(t->killed)
+      kthread_join(t->tid);
+  }
 
   //only the thread preforming exec doing this piece of code
   oldpgdir = thread->parent->pgdir;
@@ -118,7 +124,6 @@ exec(char *path, char **argv)
   thread->tf->esp = sp;
   switchuvm(thread);
   freevm(oldpgdir);
-//  release(proc->threadTable.lock); // fixme deadlocks
   // end of critical section
   // changed #end
   return 0;
