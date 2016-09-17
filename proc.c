@@ -286,7 +286,7 @@ fork(void) {
     acquire(&ptable.lock);  // fixme panic acquire
     np->state = RUNNABLE;
     nt->state = T_RUNNABLE; // changed #task1.1
-    cprintf("fork: nt->tid: %d created\n", nt->tid); // todo del
+    if (debug_mode) cprintf("fork: nt->tid: %d created\n", nt->tid); // todo del
     release(&ptable.lock); // fixme panic acquire
 
     return pid;
@@ -301,7 +301,7 @@ fork(void) {
 // until its parent calls wait() to find out it exited.
 void
 exit(void) {
-    if (proc || thread) { // todo del
+    if (debug_mode && (proc || thread)) { // todo del
         cprintf("exiting ");
         if (proc && proc->state == RUNNING)
             cprintf("proc->pid: %d ", proc->pid);
@@ -445,7 +445,7 @@ wait(void) {
 //      via swtch back to the scheduler.
 void
 scheduler(void) {
-    cprintf("in scheduler\n"); // todo del
+    if(debug_mode) cprintf("in scheduler\n"); // todo del
     struct proc *p;
     struct thread *t; // changed #task1.1
 
@@ -812,7 +812,7 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
     t->state = T_RUNNABLE;
     release(&ptable.lock);
 
-    cprintf("kthread_create: tid %d created, start_func: 0x%x\n", t->tid, start_func); // todo del
+    if(debug_mode) cprintf("kthread_create: tid %d created, start_func: 0x%x\n", t->tid, start_func); // todo del
 
     return t->tid;
 }
@@ -823,7 +823,7 @@ int kthread_create(void *(*start_func)(), void *stack, int stack_size) {
  * a non-positive error identifier is returned. Remember, thread id and process id are not identical.
  */
 int kthread_id(void) {
-    cprintf("in kthread_id\n"); // todo del
+    if(debug_mode) cprintf("in kthread_id\n"); // todo del
     if (thread)
         return thread->tid; // success
 
@@ -852,7 +852,7 @@ int kthread_id(void) {
 void kthread_exit() {
     struct thread *t;
 
-    cprintf("in kthread_exit: tid=%d\n", thread->tid); // todo del
+    if(debug_mode) cprintf("in kthread_exit: tid=%d\n", thread->tid); // todo del
 
     if (!thread)
         panic("try to kthread_exit with current thread null");
@@ -863,13 +863,13 @@ void kthread_exit() {
             goto other_threads_alive;
     }
     // this is the 'last man standing' thread in the parent process
-    cprintf("kthread_exit: tid=%d: this is the 'last man standing' thread in the parent process\n", thread->tid); // todo del
+    if(debug_mode) cprintf("kthread_exit: tid=%d: this is the 'last man standing' thread in the parent process\n", thread->tid); // todo del
     release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
     exit();
 
     other_threads_alive:
     // there are still threads alive in this process
-    cprintf("kthread_exit: tid=%d: there are still threads alive in this process\n", thread->tid); // todo del
+    if(debug_mode) cprintf("kthread_exit: tid=%d: there are still threads alive in this process\n", thread->tid); // todo del
     acquire(&ptable.lock);
     thread->state = T_ZOMBIE; // change current thread state to die
     wakeup1((void *) thread); // wake everybody who sleeps over this thread
@@ -958,7 +958,7 @@ int kthread_join(int thread_id) {
             return -1;
         }
         if (t->state == T_ZOMBIE) {
-            cprintf("join: tid=%d: deleting zombie tid = %d\n", thread->tid, t->tid); // todo del
+            if(debug_mode) cprintf("join: tid=%d: deleting zombie tid = %d\n", thread->tid, t->tid); // todo del
             if (t->kstack)
                 kfree(t->kstack);
             t->kstack = 0;
@@ -967,13 +967,13 @@ int kthread_join(int thread_id) {
             t->parent = 0;
             t->name[0] = 0;
             t->killed = 0;
-            cprintf("join: tid=%d: zombie tid = %d deleted [finished]\n", thread->tid, t->tid); // todo del
+            if(debug_mode) ("join: tid=%d: zombie tid = %d deleted [finished]\n", thread->tid, t->tid); // todo del
             release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
             return 0;
         }
 //        cprintf("join: tid: %d going to sleep on tid: %d\n", thread->tid, t->tid); // todo del
         sleep(t, thread->parent->threadTable.lock); // fixme threadTable.lock need to sleep on deferment lock?
-        cprintf("join: tid: %d waked\n", thread->tid); // todo del
+        if(debug_mode) cprintf("join: tid: %d waked\n", thread->tid); // todo del
     }
 }
 // changed #end
