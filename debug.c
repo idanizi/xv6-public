@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
         exit();
     }
 
-    debug(argv[1]);
+    debug(atoi(argv[1]));
     exit();
 }
 

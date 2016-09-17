@@ -967,7 +967,7 @@ int kthread_join(int thread_id) {
             t->parent = 0;
             t->name[0] = 0;
             t->killed = 0;
-            if(debug_mode) ("join: tid=%d: zombie tid = %d deleted [finished]\n", thread->tid, t->tid); // todo del
+            if(debug_mode) cprintf("join: tid=%d: zombie tid = %d deleted [finished]\n", thread->tid, t->tid); // todo del
             release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
             return 0;
         }

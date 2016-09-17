@@ -136,6 +136,7 @@ int sys_debug(void) {
             ) {
         return -1;
     }
-    return debug(mode);
+    debug(mode);
+    return 0;
 }
 //changed #end
