@@ -32,9 +32,9 @@ int main(int argc, char *argv[]) {
     void *(*start_func)();
     start_func = (void *) &run;
     int pid = getpid();
-    printf(1, "testTreads: main: pid=%d: creating thread, start_func: %d\n", pid, start_func);
+    printf(1, "testThreads: main: pid=%d: creating thread, start_func: %d\n", pid, start_func);
     int tid = kthread_create(start_func, stack, stack_size);
-    printf(1, "testTreads: main: pid=%d: join thread\n", pid);
+    printf(1, "testThreads: main: pid=%d: join thread\n", pid);
 //    printf(1, "testTreads: main: pid=%d: sleep 1000 ticks\n", pid);
 //    int time = uptime();
 //    int count = 0;
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 //    }
 //    printf(1, "testTreads: main: pid=%d: finish sleep %d", pid, count);
     int rest = kthread_join(tid);
-    printf(1, "testTreads: main: pid=%d: after join\n");
-    printf(1, "testTreads: main: pid=%d: result: %d, tid: %d\n", pid, rest, tid);
+    printf(1, "testThreads: main: pid=%d: after join\n");
+    printf(1, "testThreads: main: pid=%d: result: %d, tid: %d\n", pid, rest, tid);
     exit();
 }
