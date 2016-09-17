@@ -102,6 +102,7 @@ extern int sys_kthread_create(void); // changed #task1.2
 extern int sys_kthread_id(void); // changed #task1.2
 extern int sys_kthread_exit(void); // changed #task1.2
 extern int sys_kthread_join(void); // changed #task1.2
+extern int sys_debug(void); // changed
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -129,6 +130,7 @@ static int (*syscalls[])(void) = {
 [SYS_kthread_id]   sys_kthread_id, // changed #task1.2
 [SYS_kthread_exit]   sys_kthread_exit, // changed #task1.2
 [SYS_kthread_join]   sys_kthread_join, // changed #task1.2
+[SYS_debug]   sys_debug, // changed
 };
 
 void

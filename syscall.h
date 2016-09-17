@@ -25,4 +25,5 @@
 #define SYS_kthread_id  23
 #define SYS_kthread_exit  24
 #define SYS_kthread_join  25
+#define SYS_debug  26
 // changed #end

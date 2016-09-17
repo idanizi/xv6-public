@@ -127,4 +127,15 @@ int sys_kthread_join(void) {
     }
     return kthread_join(thread_id);
 }
+
+int sys_debug(void) {
+    int mode = 0;
+
+    if (// load parameters from user space to kernel space
+            argint(0, &mode) < 0
+            ) {
+        return -1;
+    }
+    return debug(mode);
+}
 //changed #end

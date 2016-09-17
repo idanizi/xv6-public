@@ -123,6 +123,7 @@ int             kthread_create(void *(*start_func)(), void *stack, int stack_siz
 int             kthread_id(void); // changed #task1.2
 void            kthread_exit(); // changed #task1.2
 int             kthread_join(int thread_id); // changed #task1.2
+void            debug(int mode); // changed
 
 // swtch.S
 void            swtch(struct context**, struct context*);

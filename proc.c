@@ -24,6 +24,12 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
+int debug_mode = 0;
+
+void debug(int mode){
+    debug_mode = mode;
+}
+
 void
 pinit(void) {
     initlock(&ptable.lock, "ptable");
