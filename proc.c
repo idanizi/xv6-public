@@ -493,8 +493,8 @@ scheduler(void) {
 
             p->state = RUNNING;
 
-//            if (p->pid != t->tid) // todo del
-//                cprintf("scheduler: running pid=%d tid=%d\n", p->pid, t->tid); // todo del
+            if (debug_mode && p->pid != t->tid)
+                cprintf("scheduler: running pid=%d tid=%d\n", p->pid, t->tid); // todo del
             swtch(&cpu->scheduler, thread->context); // changed #task1.1
             switchkvm();
 

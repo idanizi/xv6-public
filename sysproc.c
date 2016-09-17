@@ -92,18 +92,19 @@ sys_uptime(void)
 
 // changed: support threads system calls #task2.1
 int sys_kthread_create(void) {
-    void *(*start_func)() = 0;
+    int start_func = 0;
     void *stack = 0;
     int stack_size = 0;
 
     if (// load parameters from user space to kernel space
-            argptr(0, (char **) start_func, sizeof(void **)) < 0 ||
+            argint(0, &start_func) < 0 ||
             argptr(1, (char **) &stack, sizeof(void *)) < 0 ||
             argint(2, &stack_size) < 0
             ) {
         return -1;
     }
-  return kthread_create(start_func, stack, stack_size);
+    if (debug_mode) cprintf("sysproc: sys_kthread_create: start_func = 0x%x\n", start_func); // todo del
+    return kthread_create((void *(*)()) start_func, stack, stack_size);
 }
 
 int sys_kthread_id(void) {
