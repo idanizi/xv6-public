@@ -998,6 +998,28 @@ int kthread_mutex_alloc() {
  * De-allocates a mutex object which is no longer needed. The function should return 0 upon success and -
  * 1 upon failure (for example, if the given mutex is currently locked).
  */
+int kthread_mutex_dealloc(int mutex_id) {
+    struct kthread_mutex_t *m;
+    acquire(&mtable.lock);
+    for (m = mtable.mutexes; m < &mtable.mutexes[MAX_MUTEXES]; m++) {
+        if(m->mid == mutex_id){
+            // found
+            if(m->state == M_LOCKED || m->state == M_UNUSED){
+                return -1;
+            }
+
+            m->lock = 0; // todo: is there any other way to dealloc spinlock?
+            m->state = M_UNUSED;
+            m->mid = 0;
+            release(&mtable.lock);
+            return 0;
+        }
+    }
+
+    // fail - not found
+    release(&mtable.lock);
+    return -1;
+}
 
 
 // todo: implement int kthread_mutex_lock( int mutex_id );
