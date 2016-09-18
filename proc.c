@@ -321,6 +321,23 @@ exit(void) {
     if (proc == initproc)
         panic("init exiting");
 
+    // kthread_join to all other threads
+    acquire(thread->parent->threadTable.lock); // fixme deadlocks
+    for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
+        if (t->tid != thread->tid && t->state != T_UNUSED) {
+            t->killed = 1;
+            // wake threads from sleep to finish their run
+            if (t->state == T_SLEEPING) t->state = T_RUNNABLE;
+        }
+    }
+    release(proc->threadTable.lock); // fixme deadlocks
+
+    // look for killed threads and join them (wait for them to finish their run)
+    for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
+        if(t->killed)
+            kthread_join(t->tid);
+    }
+
     // Close all open files.
     for (fd = 0; fd < NOFILE; fd++) {
         if (proc->ofile[fd]) {
@@ -328,8 +345,6 @@ exit(void) {
             proc->ofile[fd] = 0;
         }
     }
-
-    // TODO: kthread_join to all other threads
 
     begin_op();
     iput(proc->cwd);
@@ -493,7 +508,7 @@ scheduler(void) {
 
             p->state = RUNNING;
 
-            if (debug_mode && p->pid != t->tid)
+            if (debug_mode >= 2 && p->pid != t->tid)
                 cprintf("scheduler: running pid=%d tid=%d\n", p->pid, t->tid); // todo del
             swtch(&cpu->scheduler, thread->context); // changed #task1.1
             switchkvm();

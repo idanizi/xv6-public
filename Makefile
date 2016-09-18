@@ -174,6 +174,8 @@ UPROGS=\
 	_zombie\
 	_testThreads\
 	_debug\
+	_threadtest1\
+	_threadtest2\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
