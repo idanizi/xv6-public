@@ -1028,6 +1028,29 @@ int kthread_mutex_dealloc(int mutex_id) {
  * already locked by another thread, this call will block the calling thread (change the thread state to
  * BLOCKED) until the mutex is unlocked.
  */
+int kthread_mutex_lock(int mutex_id) {
+    struct kthread_mutex_t *m;
+    acquire(&mtable.lock);
+    for (m = mtable.mutexes; m < &mtable.mutexes[MAX_MUTEXES]; m++) {
+        if (m->mid == mutex_id) {
+            // found
+            if (m->state == M_UNUSED) {
+                release(&mtable.lock);
+                return -1;
+            }
+            while (m->state == M_LOCKED) {
+                // go to sleep on this mutex
+                sleep(m, &mtable.lock);
+            }
+            m->state = M_LOCKED;
+            release(&mtable.lock);
+            return 0;
+        }
+    }
+    // not found
+    release(&mtable.lock);
+    return -1;
+}
 
 // todo: implement int kthread_mutex_unlock( int mutex_id );
 /*
