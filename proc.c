@@ -61,7 +61,8 @@ pinit(void) {
     // changed: init mutexes #task2.1
     initlock(&mtable.lock, "mtable");
     for (i = 0; i < MAX_MUTEXES; i++) {
-        mtable.mutexes[i].lock = 0;
+//        mtable.mutexes[i].lock = 0;
+        mtable.mutexes[i].owner = 0;
         mtable.mutexes[i].mid = 0;
         mtable.mutexes[i].state = M_UNUSED;
     }
@@ -965,7 +966,6 @@ int kthread_join(int thread_id) {
 
 // changed: support mutex (user level sync) #task2.1
 
-// todo: implement int kthread_mutex_alloc();
 /*
  * Allocates a mutex object and initializes it; the initial state should be unlocked. The function should
  * return the ID of the initialized mutex, or -1 upon failure.
@@ -984,16 +984,16 @@ int kthread_mutex_alloc() {
     found:
     m->mid = nextmid++;
     m->state = M_UNLOCKED;
-    itoa(m->mid, m->name);
-    strcat(m->name, "_ml"); // name for thread lock.
-    initlock(m->lock, m->name);
+    m->owner = 0;
+//    itoa(m->mid, m->name); // todo: spinlock field in mutex is relevant?
+//    strcat(m->name, "_ml"); // name for thread lock.
+//    initlock(m->lock, m->name);
     release(&mtable.lock);
 
     return m->mid;
 
 }
 
-// todo: implement int kthread_mutex_dealloc( int mutex_id );
 /*
  * De-allocates a mutex object which is no longer needed. The function should return 0 upon success and -
  * 1 upon failure (for example, if the given mutex is currently locked).
@@ -1008,7 +1008,7 @@ int kthread_mutex_dealloc(int mutex_id) {
                 return -1;
             }
 
-            m->lock = 0; // todo: is there any other way to dealloc spinlock?
+//            m->lock = 0; // todo: is there any other way to dealloc spinlock?
             m->state = M_UNUSED;
             m->mid = 0;
             release(&mtable.lock);
@@ -1022,7 +1022,6 @@ int kthread_mutex_dealloc(int mutex_id) {
 }
 
 
-// todo: implement int kthread_mutex_lock( int mutex_id );
 /*
  * This function is used by a thread to lock the mutex specified by the argument mutex_id. If the mutex is
  * already locked by another thread, this call will block the calling thread (change the thread state to
@@ -1043,6 +1042,7 @@ int kthread_mutex_lock(int mutex_id) {
                 sleep(m, &mtable.lock);
             }
             m->state = M_LOCKED;
+            m->owner = thread;
             release(&mtable.lock);
             return 0;
         }
@@ -1058,5 +1058,44 @@ int kthread_mutex_lock(int mutex_id) {
  * if there are any blocked threads, one of the threads will acquire the mutex. An error will be returned if
  * the mutex was already unlocked. The mutex may be owned by one thread and unlocked by another!
  */
+int kthread_mutex_unlock(int mutex_id) {
+    struct kthread_mutex_t *m;
+    struct thread *t;
+    acquire(&mtable.lock);
+    for (m = mtable.mutexes; m < &mtable.mutexes[MAX_MUTEXES]; m++) {
+        if (m->mid == mutex_id) {
+            // found
+            if(m->state == M_UNUSED || m->state == M_UNLOCKED){
+                release(&mtable.lock);
+                return -1;
+            }
+
+            // check if threads are sleeping on this mutex
+            // if yes, change owner to first to find
+            acquire(thread->parent->threadTable.lock);
+            for(t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++){
+                if(t->state == T_SLEEPING && t->chan == m){
+                    m->owner = t;
+                    goto still_blocked;
+                }
+            }
+            // no other threads are blocked
+            release(thread->parent->threadTable.lock);
+            m->owner = 0;
+            m->state = M_UNLOCKED;
+            wakeup(m);
+            release(&mtable.lock);
+            return 0;
+
+            still_blocked:
+                // todo complete from here
+            release(&mtable.lock);
+            return 0;
+        }
+    }
+    // not found
+    release(&mtable.lock);
+    return -1;
+}
 
 // changed #end

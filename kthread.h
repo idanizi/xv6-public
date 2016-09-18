@@ -62,7 +62,8 @@ enum mutexstate{
 struct kthread_mutex_t{
     int mid; // mutex id
     enum mutexstate state;
-    struct spinlock * lock; // using spinlock to implement
+//    struct spinlock * lock; // using spinlock to implement
+    struct thread * owner;
     char name[16];
 };
 
