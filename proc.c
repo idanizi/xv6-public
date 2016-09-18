@@ -7,6 +7,13 @@
 #include "proc.h"
 #include "spinlock.h"
 
+// changed #task2.1
+struct {
+    struct spinlock lock;
+    struct kthread_mutex_t mutexes[MAX_MUTEXES];
+} mtable;
+// changed #end
+
 struct {
     struct spinlock lock;
     struct proc proc[NPROC];
@@ -18,6 +25,7 @@ static struct proc *initproc;
 
 int nextpid = 1;
 int nexttid = 1; // changed #task1.1
+int nextmid = 1; // changed #task2.1
 extern void forkret(void);
 
 extern void trapret(void);
@@ -49,6 +57,13 @@ pinit(void) {
             ptable.proc[i].threadTable.threads[j].tf = 0;
             ptable.proc[i].threadTable.threads[j].tid = 0;
         }
+    }
+    // changed: init mutexes #task2.1
+    initlock(&mtable.lock, "mtable");
+    for (i = 0; i < MAX_MUTEXES; i++) {
+        mtable.mutexes[i].lock = 0;
+        mtable.mutexes[i].mid = 0;
+        mtable.mutexes[i].state = M_UNUSED;
     }
     // changed #end
 }
@@ -947,4 +962,56 @@ int kthread_join(int thread_id) {
         if(debug_mode) cprintf("join: tid: %d waked\n", thread->tid); // todo del
     }
 }
+
+// changed: support mutex (user level sync) #task2.1
+
+// todo: implement int kthread_mutex_alloc();
+/*
+ * Allocates a mutex object and initializes it; the initial state should be unlocked. The function should
+ * return the ID of the initialized mutex, or -1 upon failure.
+ */
+int kthread_mutex_alloc() {
+    struct kthread_mutex_t *m;
+    acquire(&mtable.lock);
+    for (m = mtable.mutexes; m < &mtable.mutexes[MAX_MUTEXES]; m++) {
+        if (m->state == M_UNUSED)
+            goto found;
+    }
+    // fail: no free mutex found
+    release(&mtable.lock);
+    return -1;
+
+    found:
+    m->mid = nextmid++;
+    m->state = M_UNLOCKED;
+    itoa(m->mid, m->name);
+    strcat(m->name, "_ml"); // name for thread lock.
+    initlock(m->lock, m->name);
+    release(&mtable.lock);
+
+    return m->mid;
+
+}
+
+// todo: implement int kthread_mutex_dealloc( int mutex_id );
+/*
+ * De-allocates a mutex object which is no longer needed. The function should return 0 upon success and -
+ * 1 upon failure (for example, if the given mutex is currently locked).
+ */
+
+
+// todo: implement int kthread_mutex_lock( int mutex_id );
+/*
+ * This function is used by a thread to lock the mutex specified by the argument mutex_id. If the mutex is
+ * already locked by another thread, this call will block the calling thread (change the thread state to
+ * BLOCKED) until the mutex is unlocked.
+ */
+
+// todo: implement int kthread_mutex_unlock( int mutex_id );
+/*
+ * This function unlocks the mutex specified by the argument mutex_id if called by the owning thread, and
+ * if there are any blocked threads, one of the threads will acquire the mutex. An error will be returned if
+ * the mutex was already unlocked. The mutex may be owned by one thread and unlocked by another!
+ */
+
 // changed #end

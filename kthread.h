@@ -2,8 +2,11 @@
 #ifndef XV6_PUBLIC_KTHREAD_H
 #define XV6_PUBLIC_KTHREAD_H
 
+#include "spinlock.h"
+
 // CONSTANTS
 #define NTHREAD 16
+#define MAX_MUTEXES 64
 
 enum threadstate {
     T_UNUSED, T_EMBRYO, T_SLEEPING, T_RUNNABLE, T_RUNNING, T_ZOMBIE
@@ -31,8 +34,6 @@ struct thread {
 // DONE: 4. every process will have 1 initial thread running in it.
 // DONE: 5. create the system calls that will allow the user to create and manage new threads.
 
-
-
 /*
  * DONE: moving to threads #task1.1
  * DONE: 1. Add a pointer to current thread (of type struct thread) right after the pointer to proc struct
@@ -47,17 +48,23 @@ struct thread {
 // DONE: additional changes may be required (e.g., the scheduler, for example, must update thread in addition to proc).
 // DONE: Add a constant to kthread.h called NTHREAD = 16.
 // DONE: each process should contain its own static array of threads.
-
 /*
  * todo: synchronizing all shared fields of the thread owner when they are accessed
  * DONE: add lock to proc struct,
  */
 
-/*
- * DONE: EXPECTED BEHAVIOR:
- */
-
 // DONE: thread system calls #task1.2
+
+enum mutexstate{
+    M_UNUSED, M_UNLOCKED, M_LOCKED, M_EMBRYO
+};
+
+struct kthread_mutex_t{
+    int mid; // mutex id
+    enum mutexstate state;
+    struct spinlock * lock; // using spinlock to implement
+    char name[16];
+};
 
 
 
