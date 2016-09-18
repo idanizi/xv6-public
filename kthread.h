@@ -29,7 +29,7 @@ struct thread {
 // DONE: 2. Understand what each of the fields in proc struct means to the process.
 // DONE: 3. transfer the entire system to work with the new thread structure.
 // DONE: 4. every process will have 1 initial thread running in it.
-// todo: 5. create the system calls that will allow the user to create and manage new threads.
+// DONE: 5. create the system calls that will allow the user to create and manage new threads.
 
 
 
@@ -57,7 +57,7 @@ struct thread {
  * DONE: EXPECTED BEHAVIOR:
  */
 
-// todo: thread system calls #task1.2
+// DONE: thread system calls #task1.2
 
 
 

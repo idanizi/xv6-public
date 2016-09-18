@@ -100,7 +100,7 @@ exec(char *path, char **argv)
    * similarly.
    */
   struct thread *t;
-  acquire(thread->parent->threadTable.lock); // fixme deadlocks
+  acquire(thread->parent->threadTable.lock);
   for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
     if (t->tid != thread->tid && t->state != T_UNUSED) {
       t->killed = 1;
@@ -108,7 +108,7 @@ exec(char *path, char **argv)
       if (t->state == T_SLEEPING) t->state = T_RUNNABLE;
     }
   }
-  release(proc->threadTable.lock); // fixme deadlocks
+  release(proc->threadTable.lock);
 
   // look for killed threads and join them (wait for them to finish their run)
   for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
