@@ -7,7 +7,7 @@
 #include "param.h"
 
 // CONSTANTS
-#define NTHREADS 20
+#define NTHREADS 15
 #define USTACK 4000
 
 void run() {

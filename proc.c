@@ -334,7 +334,7 @@ exit(void) {
 
     // look for killed threads and join them (wait for them to finish their run)
     for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
-        if(t->killed)
+        if(t->killed && t->tid != thread->tid)
             kthread_join(t->tid);
     }
 
@@ -948,10 +948,16 @@ int kthread_join(int thread_id) {
 //    cprintf("in join thread\n"); // todo del
     struct thread *t;
 
+    if (!thread)
+        return -1;// error: avoid segfault
+
     acquire(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
-//    cprintf("join: acquire(thread->parent->threadTable.lock)\n"); // todo del
-    if (thread_id == thread->tid)
+
+    if (thread_id == thread->tid) {
+        release(thread->parent->threadTable.lock); // fixme threadTable.lock deadlock?
         return -1;// error: thread can't join itself
+    }
+
 
     // find thread by tid
     for (t = thread->parent->threadTable.threads; t < &thread->parent->threadTable.threads[NTHREAD]; t++) {
