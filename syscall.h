@@ -26,4 +26,8 @@
 #define SYS_kthread_exit  24
 #define SYS_kthread_join  25
 #define SYS_debug  26
+#define SYS_kthread_mutex_alloc  27
+#define SYS_kthread_mutex_dealloc  28
+#define SYS_kthread_mutex_lock  29
+#define SYS_kthread_mutex_unlock  30
 // changed #end

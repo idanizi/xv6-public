@@ -1052,7 +1052,6 @@ int kthread_mutex_lock(int mutex_id) {
     return -1;
 }
 
-// todo: implement int kthread_mutex_unlock( int mutex_id );
 /*
  * This function unlocks the mutex specified by the argument mutex_id if called by the owning thread, and
  * if there are any blocked threads, one of the threads will acquire the mutex. An error will be returned if
@@ -1080,15 +1079,12 @@ int kthread_mutex_unlock(int mutex_id) {
                 }
             }
             // no other threads are blocked
-            release(thread->parent->threadTable.lock);
             m->owner = 0;
-            m->state = M_UNLOCKED;
-            wakeup(m);
-            release(&mtable.lock);
-            return 0;
 
             still_blocked:
-                // todo complete from here
+            release(thread->parent->threadTable.lock);
+            m->state = M_UNLOCKED;
+            wakeup(m);
             release(&mtable.lock);
             return 0;
         }

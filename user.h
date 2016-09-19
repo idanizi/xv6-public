@@ -28,6 +28,10 @@ int kthread_id(void); // changed #task1.2
 void kthread_exit(); // changed #task1.2
 int kthread_join(int thread_id); // changed #task1.2
 void debug(int mode); // changed
+int kthread_mutex_alloc(); // changed #task2.1
+int kthread_mutex_dealloc(int mutex_id); // changed #task2.1
+int kthread_mutex_lock(int mutex_id); // changed #task2.1
+int kthread_mutex_unlock(int mutex_id); // changed #task2.1
 
 // ulib.c
 int stat(char*, struct stat*);

@@ -103,6 +103,10 @@ extern int sys_kthread_id(void); // changed #task1.2
 extern int sys_kthread_exit(void); // changed #task1.2
 extern int sys_kthread_join(void); // changed #task1.2
 extern int sys_debug(void); // changed
+extern int sys_kthread_mutex_alloc(void); // changed #task2.1
+extern int sys_kthread_mutex_dealloc(void); // changed #task2.1
+extern int sys_kthread_mutex_lock(void); // changed #task2.1
+extern int sys_kthread_mutex_unlock(void); // changed #task2.1
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -131,6 +135,10 @@ static int (*syscalls[])(void) = {
 [SYS_kthread_exit]   sys_kthread_exit, // changed #task1.2
 [SYS_kthread_join]   sys_kthread_join, // changed #task1.2
 [SYS_debug]   sys_debug, // changed
+[SYS_kthread_mutex_alloc]   sys_kthread_mutex_alloc, // changed #task2.1
+[SYS_kthread_mutex_dealloc]   sys_kthread_mutex_dealloc, // changed #task2.1
+[SYS_kthread_mutex_lock]   sys_kthread_mutex_lock, // changed #task2.1
+[SYS_kthread_mutex_unlock]   sys_kthread_mutex_unlock, // changed #task2.1
 };
 
 void

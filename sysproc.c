@@ -140,4 +140,44 @@ int sys_debug(void) {
     debug(mode);
     return 0;
 }
+
+// changed #task2.1
+
+int sys_kthread_mutex_alloc(void){
+    // no parameters
+    return kthread_mutex_alloc();
+}
+
+int sys_kthread_mutex_dealloc(void){ // todo
+    int mutex_id = 0;
+
+    if (// load parameters from user space to kernel space
+            argint(0, &mutex_id) < 0
+            ) {
+        return -1;
+    }
+    return kthread_mutex_dealloc(mutex_id);
+}
+
+int sys_kthread_mutex_lock(void){ // todo
+    int mutex_id = 0;
+
+    if (// load parameters from user space to kernel space
+            argint(0, &mutex_id) < 0
+            ) {
+        return -1;
+    }
+    return kthread_mutex_lock(mutex_id);
+}
+
+int sys_kthread_mutex_unlock(void){// todo
+    int mutex_id = 0;
+
+    if (// load parameters from user space to kernel space
+            argint(0, &mutex_id) < 0
+            ) {
+        return -1;
+    }
+    return kthread_mutex_unlock(mutex_id);
+}
 //changed #end
