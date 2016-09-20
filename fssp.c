@@ -174,7 +174,7 @@ char calcFutureState(char self, char left, char right) {
         case M:
             return _M[stateToIndex(left)][stateToIndex(right)];
         default:
-            printf(1, "Error: calcFutureState - illegal state\n");
+            printf(1, "tid=%d: Error: calcFutureState - illegal state %c\n", kthread_id(), self);
             return (char) -1;
     }
 }
@@ -336,12 +336,15 @@ int main(int argc, char **argv) {
     semaphore_init(&start, n);
     semaphore_init(&end, 0);
 
+    // the main thread needs to block the end barrier // todo complete
+    semaphore_down(&end);
+
     // init soldiers
     struct soldier *s = 0;
     int i = 0;
     int general = 0;
     int first = 0;
-    for (s = squad; s < &squad[n]; s++, i++) {
+    for (s = squad; s < &squad[n]; s++) {
 
         // initiating to zeros
         s->state = Q;
@@ -349,20 +352,22 @@ int main(int argc, char **argv) {
         s->leftNeighbor = 0;
         s->rightNeighbor = 0;
         s->stack = 0;
-        s->futureState = 0;
+        s->futureState = Q;
 
         // setting up by position
-        first = i == 0;
-        general = i == n - 1;
+        first = (i == 0);
+        general = (i == n - 1);
         if (!first) // not first soldier
             s->leftNeighbor = squad + (i - 1);
-        else
+        else {
+            s->state = P;
+            s->futureState = P;
             s->func = (void *) &firstSoldierTrans;
+        }
         if (!general) // not General
             s->rightNeighbor = squad + (i + 1);
         else {
             s->func = (void *) &generalTrans;
-            s->state = P;
         }
         if (!general && !first) // regular soldier
             s->func = (void *) &regularSoldierTrans;
@@ -372,6 +377,11 @@ int main(int argc, char **argv) {
 
         // creating thread for this soldier
         s->tid = kthread_create(s->func, s->stack, USTACK);
+
+        printf(1, "soldier created: s->tid=%d, s->state=%c, s->futurState=%c, s->id=%d\n", s->tid, s->state, s->futureState,
+               s->id);// todo del
+
+        i++;
     }
 
     // print initial state
