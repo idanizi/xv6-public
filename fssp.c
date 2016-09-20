@@ -4,6 +4,7 @@
 #include "types.h"
 #include "stat.h"
 #include "user.h"
+#include "semaphore.h"
 
 // CONSTANTS
 #define USTACK 4000
@@ -17,57 +18,6 @@
 #define F 'F'
 
 // structs
-
-struct semaphore {
-    int s1;
-    int s2;
-    int value;
-    int wake;
-};
-
-void semaphore_init(struct semaphore *sm, int value) {
-    sm->s1 = kthread_mutex_alloc();
-    sm->s2 = kthread_mutex_alloc();
-    sm->value = value;
-    sm->wake = 0;
-}
-
-int semaphore_delete(struct semaphore *sm) {
-    if (kthread_mutex_dealloc(sm->s1) < 0)
-        return -1;
-    if (kthread_mutex_dealloc(sm->s2) < 0)
-        return -1;
-    return 0;
-}
-
-void semaphore_down(struct semaphore *sm) {
-    kthread_mutex_lock(sm->s1);
-//    printf(1, "tid=%d: semaphore_down\n", kthread_id()); // todo del
-    sm->value--;
-    if (sm->value < 0) {
-        kthread_mutex_unlock(sm->s1);
-        kthread_mutex_lock(sm->s2);
-        kthread_mutex_lock(sm->s1);
-        sm->wake--;
-        if (sm->wake > 0) {
-            kthread_mutex_unlock(sm->s2);
-        }
-    }
-    kthread_mutex_unlock(sm->s1);
-}
-
-void semaphore_up(struct semaphore *sm) {
-    kthread_mutex_lock(sm->s1);
-//    printf(1, "tid=%d: semaphore_up\n", kthread_id()); // todo del
-    sm->value++;
-    if (sm->value <= 0) {
-        sm->wake++;
-        if (sm->wake == 1) {
-            kthread_mutex_unlock(sm->s2);
-        }
-    }
-    kthread_mutex_unlock(sm->s1);
-}
 
 struct soldier {
     struct soldier *leftNeighbor;
@@ -92,6 +42,35 @@ int start_cycle;
 int start_full;
 int end_cycle;
 int end_full;
+struct {
+    int mid;
+    int on;
+} barrier;
+
+void initBarrier() {
+    barrier.mid = kthread_mutex_alloc();
+    barrier.on = 0;
+}
+
+int isBarrierOn() {
+    int ans;
+    kthread_mutex_lock(barrier.mid);
+    ans = barrier.on;
+    kthread_mutex_unlock(barrier.mid);
+    return ans;
+}
+
+void setBarrierOn() {
+    kthread_mutex_lock(barrier.mid);
+    barrier.on = 1;
+    kthread_mutex_unlock(barrier.mid);
+}
+
+void setBarrierOff() {
+    kthread_mutex_lock(barrier.mid);
+    barrier.on = 0;
+    kthread_mutex_unlock(barrier.mid);
+}
 
 // Algorithm Database
 char _Q[NSTATE][NSTATE] = {
@@ -190,15 +169,19 @@ void print(struct soldier *squad) {
 void start_round() {
     kthread_mutex_lock(mutex);
     start_cycle++;
+    printf(1, "tid%d: start_round() start_cycle=%d\n", kthread_id(), start_cycle);
     kthread_mutex_unlock(mutex);
     semaphore_down(&start);
+    while (isBarrierOn()) { sleep(10); }
 }
 
 void end_round() {
     kthread_mutex_lock(mutex);
     end_cycle++;
+    printf(1, "tid%d: end_round() end_cycle=%d\n", kthread_id(), end_cycle);
     kthread_mutex_unlock(mutex);
     semaphore_down(&end);
+    while (isBarrierOn()) { sleep(10); }
 }
 
 int areEverybodyGotToBarrier() {
@@ -208,6 +191,7 @@ int areEverybodyGotToBarrier() {
     if(ans){
         start_full = 1;
         start_cycle = 0;
+        printf(1, "tid%d: areEverybodyGotToBarrier start_full = 1;\n", kthread_id()); // todo del
         kthread_mutex_unlock(mutex);
         return ans;
     }
@@ -215,6 +199,7 @@ int areEverybodyGotToBarrier() {
     if (ans) {
         end_full = 1;
         end_cycle = 0;
+        printf(1, "tid%d: areEverybodyGotToBarrier end_full = 1;\n", kthread_id()); // todo del
         kthread_mutex_unlock(mutex);
         return ans;
     }
@@ -323,6 +308,7 @@ int main(int argc, char **argv) {
     end_full = 0;
     int finish = 0;
 
+    initBarrier();
     mutex = kthread_mutex_alloc();
 
     if (argc < 2) {
@@ -333,11 +319,15 @@ int main(int argc, char **argv) {
     // initiating by parameters
     n = atoi(argv[1]);
     squad = (struct soldier *) malloc(n * sizeof(struct soldier));
-    semaphore_init(&start, n);
+    semaphore_init(&start, 0);
     semaphore_init(&end, 0);
 
     // the main thread needs to block the end barrier // todo complete
+    semaphore_down(&start);
     semaphore_down(&end);
+
+    printf(1, "TEST: tid%d: end.s1=%d end.s2=%d, end.value=%d, end.wake=%d\n", kthread_id(), end.s1, end.s1, end.value,
+           end.wake); // todo del
 
     // init soldiers
     struct soldier *s = 0;
@@ -393,23 +383,33 @@ int main(int argc, char **argv) {
             sleep(10);
         }
 
+        setBarrierOn();
+
         // print current state
         print(squad);
 
         if (start_full) {
             start_full = 0;
-            for (i = 0; i < n; i++) {
+//            for (i = 0; i < n; i++) {
+            while (start.wake <= 0) {
                 semaphore_up(&start);
             }
+//            semaphore_up(&start);
+            semaphore_down(&start);
         } else if (end_full) {
             end_full = 0;
-            for (i = 0; i < n; i++) {
+//            for (i = 0; i < n; i++) {
+            while (end.wake <= 0) {
                 semaphore_up(&end);
             }
+//            semaphore_up(&end);
+            semaphore_down(&end);
             finish = areEverybodyFiring(squad);
         } else {
             printf(1, "Error: got to barrier without full\n");
         }
+
+        setBarrierOff();
     }
 
     // wait for all to finish
