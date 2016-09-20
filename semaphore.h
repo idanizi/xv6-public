@@ -4,6 +4,8 @@
 #ifndef XV6_PUBLIC_SEMAPHORE_H
 #define XV6_PUBLIC_SEMAPHORE_H
 
+#include "user.h"
+
 struct semaphore {
     int s1;
     int s2;
@@ -19,10 +21,16 @@ void semaphore_init(struct semaphore *sm, int value) {
 }
 
 int semaphore_delete(struct semaphore *sm) {
-    if (kthread_mutex_dealloc(sm->s1) < 0)
+    kthread_mutex_unlock(sm->s1);
+    kthread_mutex_unlock(sm->s2);
+    if (kthread_mutex_dealloc(sm->s1) < 0) {
+        printf(1,"semaphore: semaphore_delete sm->s1\n"); // todo del
         return -1;
-    if (kthread_mutex_dealloc(sm->s2) < 0)
+    }
+    if (kthread_mutex_dealloc(sm->s2) < 0) {
+        printf(1,"semaphore: semaphore_delete sm->s2\n"); // todo del
         return -1;
+    }
     return 0;
 }
 

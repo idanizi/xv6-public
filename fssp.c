@@ -438,13 +438,13 @@ int main(int argc, char **argv) {
         }
 
 //        printf(1, "setBarrierOff\n"); // todo del
-        printf(1, "finish = areEverybodyFiring(squad);\n");// todo del
+//        printf(1, "finish = areEverybodyFiring(squad);\n");// todo del
         finish = areEverybodyFiring(squad);
         setBarrierOff();
     }
 
-//    printf(1, "waking start.value=%d up\n", start.value); // todo del
-//    printf(1, "waking end.value=%d up\n", end.value); // todo del
+    printf(1, "waking start.value=%d , start.wake=%d up\n", start.value, start.wake); // todo del
+    printf(1, "waking end.value=%d , end.wake=%d up\n", end.value, end.wake); // todo del
 
     // complete sync semaphore
 //    semaphore_up(&end);
@@ -455,8 +455,11 @@ int main(int argc, char **argv) {
         kthread_join(s->tid);
     }
 
-    if (semaphore_delete(&start) < 0 || semaphore_delete(&end) < 0) {
-        printf(1, "Error: semaphore delete\n");
+    if (semaphore_delete(&start) < 0) {
+        printf(1, "Error: semaphore delete start\n");
+    }
+    if (semaphore_delete(&end) < 0) {
+        printf(1, "Error: semaphore delete end\n");
     }
 
     if (kthread_mutex_dealloc(mutex) < 0)
