@@ -91,6 +91,52 @@ int start_full;
 int end_cycle;
 int end_full;
 
+// Algorithm Database
+char _Q[NSTATE][NSTATE] = {
+        {Q, P, Q, Q, 0, Q},
+        {P, P, 0, 0, 0, P},
+        {Q, 0, Q, 0, 0, 0},
+        {Q, 0, 0, Q, 0, Q},
+        {0, 0, 0, 0, 0, 0},
+        {Q, P, Q, Q, 0, 0}
+};
+
+char _Z[NSTATE][NSTATE] = {
+        {0, 0, Q, P, Q, 0},
+        {0, Z, 0, Z, 0, 0},
+        {Q, 0, Q, Q, 0, Q},
+        {P, Z, Q, F, Q, F},
+        {Q, 0, 0, Q, Q, Q},
+        {0, Z, Q, F, Q, 0}
+};
+
+char _P[NSTATE][NSTATE] = {
+        {Z, Z, R, R, 0, 0},
+        {Z, 0, Z, Z, 0, 0},
+        {R, Z, Z, 0, 0, Z},
+        {R, Z, 0, Z, 0, Z},
+        {0, 0, 0, 0, 0, 0},
+        {Z, 0, Z, Z, 0, 0}
+};
+
+char _M[NSTATE][NSTATE] = {
+        {0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0},
+        {0, 0, R, Z, 0, 0},
+        {0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0}
+};
+
+char _R[NSTATE][NSTATE] = {
+        {0, 0, R, P, Z, 0},
+        {0, 0, M, R, M, 0},
+        {R, M, 0, 0, M, 0},
+        {P, R, 0, 0, R, 0},
+        {Z, M, M, R, M, 0},
+        {0, 0, 0, 0, 0, 0}
+};
+
 void print(struct soldier *squad) {
     struct soldier *s = 0;
     for (s = squad; s < &squad[n]; s++) {
@@ -133,27 +179,6 @@ int areEverybodyGotToBarrier() {
     kthread_mutex_unlock(mutex);
     return ans;
 }
-
-//int areAllDone(){
-//    int ans = 0;
-//    kthread_mutex_lock(mutex);
-//    ans = (cycle == n);
-//    if(ans){
-//        cycle = 0;
-//        print(squad);
-//    }
-//    kthread_mutex_dealloc(mutex);
-//    return ans;
-//}
-//
-//int barrio() {
-//    int ans = 0;
-//    kthread_mutex_lock(mutex);
-//    visitors++;
-//
-//    kthread_mutex_unlock(mutex);
-//    return ans;
-//}
 
 struct soldier *getSoldierByTid(int tid) {
     struct soldier *s;
