@@ -42,6 +42,7 @@ int start_cycle;
 int start_full;
 int end_cycle;
 int end_full;
+int exit_counter;
 struct {
     int mid;
     int on;
@@ -104,7 +105,7 @@ char _M[NSTATE][NSTATE] = {
         {0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0},
         {0, 0, R, Z, 0, 0},
-        {0, 0, 0, 0, 0, 0},
+        {0, 0, Z, 0, 0, 0},
         {0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0}
 };
@@ -169,7 +170,7 @@ void print(struct soldier *squad) {
 void start_round() {
     kthread_mutex_lock(mutex);
     start_cycle++;
-    printf(1, "tid%d: start_round() start_cycle=%d\n", kthread_id(), start_cycle);
+//    printf(1, "tid%d: start_round() start_cycle=%d\n", kthread_id(), start_cycle); // todo del
     kthread_mutex_unlock(mutex);
     semaphore_down(&start);
     while (isBarrierOn()) { sleep(10); }
@@ -178,7 +179,7 @@ void start_round() {
 void end_round() {
     kthread_mutex_lock(mutex);
     end_cycle++;
-    printf(1, "tid%d: end_round() end_cycle=%d\n", kthread_id(), end_cycle);
+//    printf(1, "tid%d: end_round() end_cycle=%d\n", kthread_id(), end_cycle); // todo del
     kthread_mutex_unlock(mutex);
     semaphore_down(&end);
     while (isBarrierOn()) { sleep(10); }
@@ -191,7 +192,7 @@ int areEverybodyGotToBarrier() {
     if(ans){
         start_full = 1;
         start_cycle = 0;
-        printf(1, "tid%d: areEverybodyGotToBarrier start_full = 1;\n", kthread_id()); // todo del
+//        printf(1, "tid%d: areEverybodyGotToBarrier start_full = 1;\n", kthread_id()); // todo del
         kthread_mutex_unlock(mutex);
         return ans;
     }
@@ -199,7 +200,7 @@ int areEverybodyGotToBarrier() {
     if (ans) {
         end_full = 1;
         end_cycle = 0;
-        printf(1, "tid%d: areEverybodyGotToBarrier end_full = 1;\n", kthread_id()); // todo del
+//        printf(1, "tid%d: areEverybodyGotToBarrier end_full = 1;\n", kthread_id()); // todo del
         kthread_mutex_unlock(mutex);
         return ans;
     }
@@ -214,6 +215,14 @@ struct soldier *getSoldierByTid(int tid) {
             return s;
     }
     return 0;
+}
+
+int areAllExited(){
+    int ans = 0;
+    kthread_mutex_lock(mutex);
+    ans = (exit_counter == n);
+    kthread_mutex_unlock(mutex);
+    return ans;
 }
 
 // for threads
@@ -238,6 +247,12 @@ void regularSoldierTrans() {
 
     }
 
+    kthread_mutex_lock(mutex);
+    exit_counter++;
+    kthread_mutex_unlock(mutex);
+
+    printf(1, "tid%d: kthread_exit()\n", kthread_id()); // todo del
+
     kthread_exit();
 }
 
@@ -260,6 +275,13 @@ void generalTrans() {
         s->state = s->futureState;
     }
 
+    kthread_mutex_lock(mutex);
+    exit_counter++;
+    kthread_mutex_unlock(mutex);
+
+    printf(1, "tid%d: kthread_exit()\n", kthread_id()); // todo del
+
+    print(squad);
     kthread_exit();
 }
 
@@ -282,6 +304,11 @@ void firstSoldierTrans() {
         s->state = s->futureState;
     }
 
+    kthread_mutex_lock(mutex);
+    exit_counter++;
+    kthread_mutex_unlock(mutex);
+    printf(1, "tid%d: kthread_exit()\n", kthread_id()); // todo del
+
     kthread_exit();
 }
 
@@ -289,11 +316,12 @@ int areEverybodyFiring(struct soldier *squad) {
     struct soldier *s = 0;
     kthread_mutex_lock(mutex);
     for (s = squad; s < &squad[n]; s++) {
-        if(s->state != F) {
+        if(s->futureState != F) {
             kthread_mutex_unlock(mutex);
             return 0;
         }
     }
+    printf(1, "areEverybodyFiring yes\n"); // todo del
     kthread_mutex_unlock(mutex);
     return 1;
 }
@@ -307,6 +335,7 @@ int main(int argc, char **argv) {
     end_cycle = 0;
     end_full = 0;
     int finish = 0;
+    exit_counter = 0;
 
     initBarrier();
     mutex = kthread_mutex_alloc();
@@ -326,8 +355,7 @@ int main(int argc, char **argv) {
     semaphore_down(&start);
     semaphore_down(&end);
 
-    printf(1, "TEST: tid%d: end.s1=%d end.s2=%d, end.value=%d, end.wake=%d\n", kthread_id(), end.s1, end.s1, end.value,
-           end.wake); // todo del
+//    printf(1, "TEST: tid%d: end.s1=%d end.s2=%d, end.value=%d, end.wake=%d\n", kthread_id(), end.s1, end.s1, end.value, end.wake); // todo del
 
     // init soldiers
     struct soldier *s = 0;
@@ -368,8 +396,8 @@ int main(int argc, char **argv) {
         // creating thread for this soldier
         s->tid = kthread_create(s->func, s->stack, USTACK);
 
-        printf(1, "soldier created: s->tid=%d, s->state=%c, s->futurState=%c, s->id=%d\n", s->tid, s->state, s->futureState,
-               s->id);// todo del
+//        printf(1, "soldier created: s->tid=%d, s->state=%c, s->futurState=%c, s->id=%d\n", s->tid, s->state,
+//               s->futureState, s->id);// todo del
 
         i++;
     }
@@ -378,8 +406,8 @@ int main(int argc, char **argv) {
     print(squad);
 
     // main process looking after threads and release them from barrier all together
-    while (!finish) {
-        while (!areEverybodyGotToBarrier()) {
+    while (!finish && !areAllExited()) {
+        while (!areEverybodyGotToBarrier() && !finish && !areAllExited()) {
             sleep(10);
         }
 
@@ -391,7 +419,7 @@ int main(int argc, char **argv) {
         if (start_full) {
             start_full = 0;
 //            for (i = 0; i < n; i++) {
-            while (start.wake <= 0) {
+            while (start.value <= 0) {
                 semaphore_up(&start);
             }
 //            semaphore_up(&start);
@@ -399,18 +427,28 @@ int main(int argc, char **argv) {
         } else if (end_full) {
             end_full = 0;
 //            for (i = 0; i < n; i++) {
-            while (end.wake <= 0) {
+            while (end.value <= 0) {
                 semaphore_up(&end);
             }
 //            semaphore_up(&end);
             semaphore_down(&end);
-            finish = areEverybodyFiring(squad);
+
         } else {
             printf(1, "Error: got to barrier without full\n");
         }
 
+//        printf(1, "setBarrierOff\n"); // todo del
+        printf(1, "finish = areEverybodyFiring(squad);\n");// todo del
+        finish = areEverybodyFiring(squad);
         setBarrierOff();
     }
+
+//    printf(1, "waking start.value=%d up\n", start.value); // todo del
+//    printf(1, "waking end.value=%d up\n", end.value); // todo del
+
+    // complete sync semaphore
+//    semaphore_up(&end);
+//    semaphore_up(&start);
 
     // wait for all to finish
     for (s = squad; s < &squad[n]; s++) {
