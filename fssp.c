@@ -42,6 +42,7 @@ int semaphore_delete(struct semaphore *sm) {
 
 void semaphore_down(struct semaphore *sm) {
     kthread_mutex_lock(sm->s1);
+//    printf(1, "tid=%d: semaphore_down\n", kthread_id()); // todo del
     sm->value--;
     if (sm->value < 0) {
         kthread_mutex_unlock(sm->s1);
@@ -57,6 +58,7 @@ void semaphore_down(struct semaphore *sm) {
 
 void semaphore_up(struct semaphore *sm) {
     kthread_mutex_lock(sm->s1);
+//    printf(1, "tid=%d: semaphore_up\n", kthread_id()); // todo del
     sm->value++;
     if (sm->value <= 0) {
         sm->wake++;
@@ -230,7 +232,7 @@ struct soldier *getSoldierByTid(int tid) {
 }
 
 // for threads
-void regularSoldierTrans() {// todo implement
+void regularSoldierTrans() {
 
     int tid = kthread_id();
     struct soldier *s = getSoldierByTid(tid);
@@ -254,7 +256,7 @@ void regularSoldierTrans() {// todo implement
     kthread_exit();
 }
 
-void generalTrans() {// todo implement
+void generalTrans() {
 
     int tid = kthread_id();
     struct soldier *s = getSoldierByTid(tid);
@@ -276,7 +278,7 @@ void generalTrans() {// todo implement
     kthread_exit();
 }
 
-void firstSoldierTrans() {// todo implement
+void firstSoldierTrans() {
 
     int tid = kthread_id();
     struct soldier *s = getSoldierByTid(tid);
@@ -411,6 +413,11 @@ int main(int argc, char **argv) {
 
     if (kthread_mutex_dealloc(mutex) < 0)
         printf(1, "Error: mutex dealloc failed!\n");
+
+    for(s = squad; s < &squad[n]; s++){
+        if(s->stack)
+            free(s->stack);
+    }
 
     if (squad) {
         free(squad);
