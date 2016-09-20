@@ -251,7 +251,7 @@ void regularSoldierTrans() {
     exit_counter++;
     kthread_mutex_unlock(mutex);
 
-    printf(1, "tid%d: kthread_exit()\n", kthread_id()); // todo del
+//    printf(1, "tid%d: kthread_exit()\n", kthread_id()); // todo del
 
     kthread_exit();
 }
@@ -279,7 +279,7 @@ void generalTrans() {
     exit_counter++;
     kthread_mutex_unlock(mutex);
 
-    printf(1, "tid%d: kthread_exit()\n", kthread_id()); // todo del
+//    printf(1, "tid%d: kthread_exit()\n", kthread_id()); // todo del
 
     print(squad);
     kthread_exit();
@@ -307,7 +307,7 @@ void firstSoldierTrans() {
     kthread_mutex_lock(mutex);
     exit_counter++;
     kthread_mutex_unlock(mutex);
-    printf(1, "tid%d: kthread_exit()\n", kthread_id()); // todo del
+//    printf(1, "tid%d: kthread_exit()\n", kthread_id()); // todo del
 
     kthread_exit();
 }
@@ -321,7 +321,7 @@ int areEverybodyFiring(struct soldier *squad) {
             return 0;
         }
     }
-    printf(1, "areEverybodyFiring yes\n"); // todo del
+//    printf(1, "areEverybodyFiring yes\n"); // todo del
     kthread_mutex_unlock(mutex);
     return 1;
 }
@@ -443,8 +443,8 @@ int main(int argc, char **argv) {
         setBarrierOff();
     }
 
-    printf(1, "waking start.value=%d , start.wake=%d up\n", start.value, start.wake); // todo del
-    printf(1, "waking end.value=%d , end.wake=%d up\n", end.value, end.wake); // todo del
+//    printf(1, "waking start.value=%d , start.wake=%d up\n", start.value, start.wake); // todo del
+//    printf(1, "waking end.value=%d , end.wake=%d up\n", end.value, end.wake); // todo del
 
     // complete sync semaphore
 //    semaphore_up(&end);

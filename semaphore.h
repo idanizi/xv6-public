@@ -24,11 +24,11 @@ int semaphore_delete(struct semaphore *sm) {
     kthread_mutex_unlock(sm->s1);
     kthread_mutex_unlock(sm->s2);
     if (kthread_mutex_dealloc(sm->s1) < 0) {
-        printf(1,"semaphore: semaphore_delete sm->s1\n"); // todo del
+//        printf(1,"semaphore: semaphore_delete sm->s1\n"); // todo del
         return -1;
     }
     if (kthread_mutex_dealloc(sm->s2) < 0) {
-        printf(1,"semaphore: semaphore_delete sm->s2\n"); // todo del
+//        printf(1,"semaphore: semaphore_delete sm->s2\n"); // todo del
         return -1;
     }
     return 0;
