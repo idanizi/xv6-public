@@ -148,7 +148,7 @@ int sys_kthread_mutex_alloc(void){
     return kthread_mutex_alloc();
 }
 
-int sys_kthread_mutex_dealloc(void){ // todo
+int sys_kthread_mutex_dealloc(void){
     int mutex_id = 0;
 
     if (// load parameters from user space to kernel space
@@ -159,7 +159,7 @@ int sys_kthread_mutex_dealloc(void){ // todo
     return kthread_mutex_dealloc(mutex_id);
 }
 
-int sys_kthread_mutex_lock(void){ // todo
+int sys_kthread_mutex_lock(void){
     int mutex_id = 0;
 
     if (// load parameters from user space to kernel space
@@ -170,7 +170,7 @@ int sys_kthread_mutex_lock(void){ // todo
     return kthread_mutex_lock(mutex_id);
 }
 
-int sys_kthread_mutex_unlock(void){// todo
+int sys_kthread_mutex_unlock(void){
     int mutex_id = 0;
 
     if (// load parameters from user space to kernel space

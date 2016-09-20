@@ -177,6 +177,7 @@ UPROGS=\
 	_threadtest1\
 	_threadtest2\
 	_test2_1\
+	_fssp\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
