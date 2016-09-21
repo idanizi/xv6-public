@@ -698,6 +698,12 @@ kill(int pid) {
     return -1;
 }
 
+// TODO: includes the mapping from virtual pages to physical pages (for all the used pages) and the value of the writable flag. #task3.1
+/*
+ * Don’t print anything for pages or page tables that are currently unused.
+ * Only print pages that are user pages (PTE_U).
+ */
+
 //PAGEBREAK: 36
 // Print a process listing to console.  For debugging.
 // Runs when user types ^P on console.
@@ -731,18 +737,38 @@ procdump(void) {
 //            acquire(p->threadTable.lock);
         for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
             if (t->state == T_SLEEPING) {
+                cprintf("tid%d: ", t->tid);
                 getcallerpcs((uint *) t->context->ebp + 2, pc);
                 for (i = 0; i < 10 && pc[i] != 0; i++)
                     cprintf(" %p", pc[i]);
+                cprintf("\n");
             }
         }
+
+        // changed #task3.1
+        cprintf("~ Page Mapping: ~\n");
+        int va;
+        pte_t *pte;
+        for (va = 0; va < p->sz; va += PGSIZE) {
+            pte = walkpgdir(p->pgdir, (char*) va, 0);
+            if(pte && (*pte & PTE_P) && (*pte & PTE_U)){
+                cprintf("0x%x -> 0x%x, ", (va >> 12), (*pte >> 12));
+                if(*pte & PTE_W)
+                    cprintf("y\n");
+                else
+                    cprintf("n\n");
+            }
+        }
+
+
+
+        // changed original code removed
 //            release(p->threadTable.lock);
 //            getcallerpcs((uint *) p->context->ebp + 2, pc);
 //            for (i = 0; i < 10 && pc[i] != 0; i++)
 //                cprintf(" %p", pc[i]);
 //        } // if (p->state == SLEEPING)
         //changed #end
-        cprintf("\n");
     }
 }
 
@@ -985,9 +1011,6 @@ int kthread_mutex_alloc() {
     m->mid = nextmid++;
     m->state = M_UNLOCKED;
     m->owner = 0;
-//    itoa(m->mid, m->name); // todo: spinlock field in mutex is relevant?
-//    strcat(m->name, "_ml"); // name for thread lock.
-//    initlock(m->lock, m->name);
     release(&mtable.lock);
 
     return m->mid;
@@ -1008,7 +1031,6 @@ int kthread_mutex_dealloc(int mutex_id) {
                 return -1;
             }
 
-//            m->lock = 0; // todo: is there any other way to dealloc spinlock?
             m->state = M_UNUSED;
             m->mid = 0;
             release(&mtable.lock);
