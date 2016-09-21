@@ -52,6 +52,7 @@ seginit(void)
   
   // Initialize cpu-local storage.
   cpu = c;
+  thread = 0; // changed
   proc = 0;
 
   // changed: initiating counters to zero and their mutex lock #task3.2
@@ -263,7 +264,12 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
       return 0;
     }
     memset(mem, 0, PGSIZE);
-    mappages(pgdir, (char*)a, PGSIZE, v2p(mem), PTE_W|PTE_U);
+    if(mappages(pgdir, (char*)a, PGSIZE, v2p(mem), PTE_W|PTE_U) < 0){
+      cprintf("allocuvm out of memory - mappings\n");
+      deallocuvm(pgdir, newsz, oldsz);
+      kfree(mem);
+      return 0;
+    }
   }
   return newsz;
 }
@@ -350,7 +356,7 @@ copyuvm(pde_t *pgdir, uint sz)
   pde_t *d;
   pte_t *pte;
   uint pa, i, flags;
-  char *mem;
+//  char *mem;
 
   if((d = setupkvm()) == 0)
     return 0;
@@ -363,6 +369,11 @@ copyuvm(pde_t *pgdir, uint sz)
     if(!(*pte & PTE_P))
       panic("copyuvm: page not present");
     pa = PTE_ADDR(*pte);
+    // set flags
+    if(*pte & PTE_W){
+      *pte &= ~PTE_W;
+      *pte |= PTE_SH;
+    }
     flags = PTE_FLAGS(*pte);
 
     // changed #task3.2
@@ -380,12 +391,6 @@ copyuvm(pde_t *pgdir, uint sz)
 
     if (mappages(d, (void *) i, PGSIZE, pa, flags) < 0)
       goto bad;
-
-    // set flags
-    if(*pte & PTE_W){
-      *pte &= ~PTE_W;
-      *pte |= PTE_SH;
-    }
   }
   // changed #taks3.2
   release(&physicalPagesInfo.lock);
@@ -445,15 +450,16 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 // handles event of page fault.
 // return -1 in case of failure.
 int pgFaultEventHandler() { //todo
+//  cprintf("~~~~~~~~ in page fault handler ~~~~~~~\n"); // todo del
   void *fva = (void *) rcr2(); // faulty virtual address
   uint pa; // physical address
   char *np; // new page
   pte_t *pte; // page table entry
 
   if(!(pte = walkpgdir(proc->pgdir, fva, 0)))
-    return -1;
+    return 0;
 
-  pa = PTE_ADDR(pte);
+  pa = PTE_ADDR(*pte);
 
   acquire(&physicalPagesInfo.lock);
   if(!(*pte & PTE_W) && (*pte & PTE_SH)){
@@ -466,7 +472,8 @@ int pgFaultEventHandler() { //todo
 
       // memory set
       memmove(np, (char*) p2v(pa), PGSIZE);
-      pte = v2p(np);
+      *pte &= 0xfff;
+      *pte |= v2p(np);
 
       // reduce counters
       physicalPagesInfo.counter[(pa >> 12)]--;
