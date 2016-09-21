@@ -698,7 +698,7 @@ kill(int pid) {
     return -1;
 }
 
-// TODO: includes the mapping from virtual pages to physical pages (for all the used pages) and the value of the writable flag. #task3.1
+// DONE: includes the mapping from virtual pages to physical pages (for all the used pages) and the value of the writable flag. #task3.1
 /*
  * Don’t print anything for pages or page tables that are currently unused.
  * Only print pages that are user pages (PTE_U).
@@ -731,13 +731,13 @@ procdump(void) {
             state = states[p->state];
         else
             state = "???";
-        cprintf("%d %s %s", p->pid, state, p->name);
+        cprintf("%d %s %s:\n", p->pid, state, p->name);
         // changed #task1.1
 //        if (p->state == SLEEPING) {
 //            acquire(p->threadTable.lock);
         for (t = p->threadTable.threads; t < &p->threadTable.threads[NTHREAD]; t++) {
             if (t->state == T_SLEEPING) {
-                cprintf("tid%d: ", t->tid);
+                cprintf("- tid%d: ", t->tid);
                 getcallerpcs((uint *) t->context->ebp + 2, pc);
                 for (i = 0; i < 10 && pc[i] != 0; i++)
                     cprintf(" %p", pc[i]);
@@ -760,9 +760,7 @@ procdump(void) {
             }
         }
 
-
-
-        // changed original code removed
+        // changed original code disabled
 //            release(p->threadTable.lock);
 //            getcallerpcs((uint *) p->context->ebp + 2, pc);
 //            for (i = 0; i < 10 && pc[i] != 0; i++)
