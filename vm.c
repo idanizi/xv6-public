@@ -10,9 +10,21 @@
 #include "kthread.h"
 // changed #end
 
+// changed #task3.2
+#define PG_NUM PHYSTOP/PGSIZE
+// changed #end
+
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
 struct segdesc gdt[NSEGS];
+
+// changed #task3.2
+// counter for each physical page to track page sharing
+struct {
+    struct spinlock lock;
+    char counter[PG_NUM];
+} physicalPagesInfo;
+// changed #end
 
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
@@ -41,6 +53,14 @@ seginit(void)
   // Initialize cpu-local storage.
   cpu = c;
   proc = 0;
+
+  // changed: initiating counters to zero and their mutex lock #task3.2
+  initlock(&physicalPagesInfo.lock, "phyPagesInfo_lk");
+  int i = 0;
+  for (i = 0; i < PG_NUM; i++) {
+    physicalPagesInfo.counter[i] = 0;
+  }
+  // changed #end
 }
 
 // Return the address of the PTE in page table pgdir
@@ -262,19 +282,31 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
     return oldsz;
 
   a = PGROUNDUP(newsz);
+
+  acquire(&physicalPagesInfo.lock);  // changed #task3.2
+
   for(; a  < oldsz; a += PGSIZE){
     pte = walkpgdir(pgdir, (char*)a, 0);
     if(!pte)
       a += (NPTENTRIES - 1) * PGSIZE;
     else if((*pte & PTE_P) != 0){
       pa = PTE_ADDR(*pte);
-      if(pa == 0)
-        panic("kfree");
-      char *v = p2v(pa);
-      kfree(v);
+
+      // changed #task3.2
+      if (physicalPagesInfo.counter[(pa >> 12)] == 0) { // no other process needs this page
+        if (pa == 0)
+          panic("kfree");
+        char *v = p2v(pa);
+        kfree(v);
+      } else { // there are other processes that need this page
+        physicalPagesInfo.counter[(pa >> 12)]--;
+      }
+      // changed #end
+
       *pte = 0;
     }
   }
+  release(&physicalPagesInfo.lock); // changed #task3.2
   return newsz;
 }
 
@@ -322,6 +354,9 @@ copyuvm(pde_t *pgdir, uint sz)
 
   if((d = setupkvm()) == 0)
     return 0;
+
+  acquire(&physicalPagesInfo.lock); // changed #taks3.2
+
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walkpgdir(pgdir, (void *) i, 0)) == 0)
       panic("copyuvm: pte should exist");
@@ -329,15 +364,32 @@ copyuvm(pde_t *pgdir, uint sz)
       panic("copyuvm: page not present");
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
-    if((mem = kalloc()) == 0)
-      goto bad;
-    memmove(mem, (char*)p2v(pa), PGSIZE);
-    if(mappages(d, (void*)i, PGSIZE, v2p(mem), flags) < 0)
+
+    // changed #task3.2
+//    if((mem = kalloc()) == 0)
+//      goto bad;
+//    memmove(mem, (char*)p2v(pa), PGSIZE);
+//    if(mappages(d, (void*)i, PGSIZE, v2p(mem), flags) < 0)
+//      goto bad;
+
+    if (physicalPagesInfo.counter[(pa >> 12)] == 0) {
+      physicalPagesInfo.counter[(pa >> 12)] = 2;
+    } else {
+      physicalPagesInfo.counter[(pa >> 12)]++;
+    }
+
+    if (mappages(d, (void *) i, PGSIZE, pa, flags) < 0)
       goto bad;
   }
+  // changed #taks3.2
+  release(&physicalPagesInfo.lock);
+  asm("movl %cr3,%eax");
+  asm("movl %eax,%cr3");
+  // changed #end
   return d;
 
 bad:
+release(&physicalPagesInfo.lock); // changed #taks3.2
   freevm(d);
   return 0;
 }
@@ -381,6 +433,10 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
     va = va0 + PGSIZE;
   }
   return 0;
+}
+
+int pgfaultEventHandler(){
+
 }
 
 //PAGEBREAK!

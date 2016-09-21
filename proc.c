@@ -126,6 +126,7 @@ allocproc(void) {
     // Allocate kernel stack.
     if ((t->kstack = kalloc()) == 0) {
         t->state = T_UNUSED;
+        p->state = UNUSED;
         return 0;
     }
     sp = t->kstack + KSTACKSIZE;
@@ -242,6 +243,16 @@ growproc(int n) {
     // changed #end
     return 0;
 }
+
+// TODO: change the behavior of the fork system call so that it will not copy memory pages, and the virtual memory of the parent and child processes will point to the same physical pages. #task3.2
+// TODO: render each shared page as read-only for both the parent and the child.
+/*
+ * TODO: page fault handler
+ * when a process would try and write to the page, a page fault will be raised and then the page should be copied to
+ * a new place (and the previous page should become writeable once again).
+ */
+
+// TODO: add another flag to each virtual page to mark it as a shared page.
 
 /*
  * DONE: 1. Fork – should duplicate only the calling thread,
