@@ -765,9 +765,12 @@ procdump(void) {
             if(pte && (*pte & PTE_P) && (*pte & PTE_U)){
                 cprintf("0x%x -> 0x%x, ", (va >> 12), (*pte >> 12));
                 if(*pte & PTE_W)
-                    cprintf("y\n");
+                    cprintf("y");
                 else
-                    cprintf("n\n");
+                    cprintf("n");
+                if(*pte & PTE_SH)
+                    cprintf(", shared");
+                cprintf("\n");
             }
         }
 
