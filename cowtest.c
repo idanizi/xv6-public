@@ -2,14 +2,7 @@
 #include "stat.h"
 #include "user.h"
 
-void waitTime(char *message, int *x) {
-    printf(1, "%s | X=%d\n", message, *x);
-    printf(1, "Please press CTRL+P...\n");
-    sleep(1000);
-}
-
-int
-main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     int *mem = (int *) malloc(sizeof(int));
     *mem = 1234;
     printf(1, "before fork: mem=0x%x, *mem=%d\n", mem, *mem);
