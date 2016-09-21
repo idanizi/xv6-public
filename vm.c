@@ -380,6 +380,12 @@ copyuvm(pde_t *pgdir, uint sz)
 
     if (mappages(d, (void *) i, PGSIZE, pa, flags) < 0)
       goto bad;
+
+    // set flags
+    if(*pte & PTE_W){
+      *pte &= ~PTE_W;
+      *pte |= PTE_SH;
+    }
   }
   // changed #taks3.2
   release(&physicalPagesInfo.lock);
@@ -435,8 +441,50 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
   return 0;
 }
 
-int pgfaultEventHandler(){
+// changed #task3.2
+// handles event of page fault.
+// return -1 in case of failure.
+int pgFaultEventHandler() { //todo
+  void *fva = (void *) rcr2(); // faulty virtual address
+  uint pa; // physical address
+  char *np; // new page
+  pte_t *pte; // page table entry
 
+  if(!(pte = walkpgdir(proc->pgdir, fva, 0)))
+    return -1;
+
+  pa = PTE_ADDR(pte);
+
+  acquire(&physicalPagesInfo.lock);
+  if(!(*pte & PTE_W) && (*pte & PTE_SH)){
+    // the page is readonly and shared = cow
+    if(physicalPagesInfo.counter[(pa >> 12)] > 1){
+      // more then one process uses this page
+      if((np = kalloc()) == 0){
+        goto bad;
+      }
+
+      // memory set
+      memmove(np, (char*) p2v(pa), PGSIZE);
+      pte = v2p(np);
+
+      // reduce counters
+      physicalPagesInfo.counter[(pa >> 12)]--;
+    }
+
+    // flags set
+    *pte &= ~PTE_SH; // not shared
+    *pte |= PTE_W; // writable
+
+    asm("movl %cr3,%eax");
+    asm("movl %eax,%cr3");
+    release(&physicalPagesInfo.lock);
+    return 0;
+  }
+
+  bad:
+  release(&physicalPagesInfo.lock);
+  return -1;
 }
 
 //PAGEBREAK!

@@ -198,6 +198,7 @@ void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
 pte_t *         walkpgdir(pde_t *pgdir, const void *va, int alloc); // changed #task3.1
+int             pgFaultEventHandler(); // changed #task3.2
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
